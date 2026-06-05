@@ -194,6 +194,7 @@ export class AudioRecorder {
   private silentSink: GainNode | null = null;
   private analyser: AnalyserNode | null = null;
   private dataArray: Uint8Array | null = null;
+  private killed = false;
   private onData: (base64: string) => void;
 
   constructor(onData: (base64: string) => void) {
@@ -201,6 +202,7 @@ export class AudioRecorder {
   }
 
   async start() {
+    this.killed = false;
     this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     this.stream = await navigator.mediaDevices.getUserMedia({ 
       audio: {
@@ -222,6 +224,7 @@ export class AudioRecorder {
 
     this.processor = this.audioContext.createScriptProcessor(1024, 1, 1);
     this.processor.onaudioprocess = (e) => {
+      if (this.killed) return; // Bail immediately if stopped
       const input = e.inputBuffer.getChannelData(0);
       const resampled = this.downsampleBuffer(input, this.audioContext!.sampleRate, 16000);
       const output = new Int16Array(resampled.length);
@@ -290,6 +293,7 @@ export class AudioRecorder {
   }
 
   stop() {
+    this.killed = true;
     if (this.processor && this.audioContext) {
       try {
         this.processor.disconnect();

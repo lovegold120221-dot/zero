@@ -7,6 +7,7 @@ import {
 import {
   callWhatsAppTool,
   getWhatsAppAdminOverview,
+  getWhatsAppStatus,
   saveWhatsAppAdminConfig,
   startWhatsAppPairing,
 } from '../lib/whatsappClient';
@@ -56,12 +57,25 @@ export function WhatsAppOnboarding({ user, onComplete, onSkip }: WhatsAppOnboard
   useEffect(() => {
     (async () => {
       try {
-        const overview = await getWhatsAppAdminOverview(user.uid);
-        const status = overview.status?.status || 'not_found';
-        const config = overview.config || {};
+        let status = 'not_found';
+        let phone = '';
+        let qrCode = '';
+        let config: any = {};
+        try {
+          const overview = await getWhatsAppAdminOverview(user.uid);
+          status = overview?.status?.status || 'not_found';
+          phone = overview?.status?.phone || '';
+          qrCode = overview?.status?.qrCode || '';
+          config = overview.config || {};
+        } catch {
+          const s = await getWhatsAppStatus(user.uid);
+          status = s?.status || 'not_found';
+          phone = s?.phone || '';
+          qrCode = s?.qrCode || '';
+        }
         setWaStatus(status);
-        setWaPhone(overview.status?.phone || '');
-        setQrCode(overview.status?.qrCode || '');
+        setWaPhone(phone);
+        setQrCode(qrCode);
 
         if (status === 'paired' || status === 'connected') {
           const savedPerms = config.permissions;
@@ -87,12 +101,22 @@ export function WhatsAppOnboarding({ user, onComplete, onSkip }: WhatsAppOnboard
       const started = Date.now();
       const timer = setInterval(async () => {
         try {
-          const overview = await getWhatsAppAdminOverview(user.uid);
-          const status = overview.status?.status || 'not_found';
+          let status = 'not_found';
+          // Try admin overview first, fall back to simple status
+          try {
+            const overview = await getWhatsAppAdminOverview(user.uid);
+            status = overview?.status?.status || 'not_found';
+            setWaPhone(overview?.status?.phone || '');
+            setQrCode(overview?.status?.qrCode || '');
+            setPairingCode(overview?.status?.pairingCode || '');
+          } catch {
+            // Fallback to simple status check
+            const s = await getWhatsAppStatus(user.uid);
+            status = s?.status || 'not_found';
+            setWaPhone(s?.phone || '');
+            setQrCode(s?.qrCode || '');
+          }
           setWaStatus(status);
-          setWaPhone(overview.status?.phone || '');
-          setQrCode(overview.status?.qrCode || '');
-          setPairingCode(overview.status?.pairingCode || overview.pairingCode || '');
           if (Date.now() - started > 120_000 || status === 'paired') {
             clearInterval(timer);
             setPairing(false);

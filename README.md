@@ -68,10 +68,13 @@
 
 ### 💬 WhatsApp Integration
 - Pair via QR code or OTP (country-code-aware)
-- Full history sync on pairing (`syncFullHistory`)
+- Full history sync on pairing with auto-sync trigger
+- Real-time message streaming via SSE (`/api/whatsapp/stream/:userId`)
 - Send/receive messages, read chats, manage contacts and groups
 - All permissions default-enabled on pair
 - Auto Belgian phone normalization (`04xx` → `+324xx`)
+- Contact names resolved from WhatsApp profile names + phonebook
+- **Provider**: Baileys exclusively (Go WhatsApp removed)
 
 ### 🧠 Memory System
 - `add_to_memory` — save facts, preferences, and personal info
@@ -91,6 +94,35 @@
 - Chromium headless browser, Playwright-based
 - Sub-second latency for page interactions
 - Python wrapper at `scripts/cerebras_browser.py`
+
+### 🎭 Human Voice Personality
+- 100+ human vocal expressions: laughter, sighs, humming, throat clears, exclamations
+- Dynamic emotional modulation per context (excited, thoughtful, frustrated, flirty)
+- Language-adaptive expressions: French "ouf!", Filipino "hay nako!", Dutch "he hè!"
+- 80/20 vocal balance rule — mostly clean speech with natural expressions
+- 460-line voice personality prompt defining the Beatrice persona
+
+### 🔄 WebSocket Stability & Auto-Reconnect
+- Exponential backoff reconnection (1s → 2s → 4s → 8s → 16s)
+- Saved conversation context restored on reconnect
+- Audio recorder `killed` flag prevents flood on session close
+- `onclose` auto-reconnects; `onerror` no longer kills session
+- `sendToolResponse` wrapped in try/catch
+
+### ⏰ Temporal Awareness
+- Relative timestamps injected into conversation history (5s ago, 3m ago, 2h ago)
+- Beatrice knows exactly when the last conversation happened
+- Current date/time injected in system prompt for time-aware responses
+
+### ⚡ Real-Time Settings Sync
+- Persona name, user title, language changes sync to active session immediately
+- No restart needed when changing settings mid-conversation
+- Tracking refs detect what changed and send system update to Live session
+
+### 🎵 Audio Feedback
+- Clean connect chime: C-E-G rising arpeggio
+- Clean disconnect chime: G-D-A falling pattern
+- Generated via Web Audio API — no audio files needed
 
 ### 🇧🇪 Belgian Administrative Tools
 | Tool | What it does |

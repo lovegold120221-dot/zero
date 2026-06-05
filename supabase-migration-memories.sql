@@ -22,14 +22,19 @@ CREATE INDEX IF NOT EXISTS idx_memories_tags ON memories USING gin(tags);
 -- Row-level security: users can only see their own memories
 ALTER TABLE memories ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies to recreate cleanly
+DROP POLICY IF EXISTS "Users can read own memories" ON memories;
+DROP POLICY IF EXISTS "Users can insert own memories" ON memories;
+DROP POLICY IF EXISTS "Users can delete own memories" ON memories;
+
 CREATE POLICY "Users can read own memories"
   ON memories FOR SELECT
-  USING (user_id = current_user OR user_id = auth.uid()::text);
+  USING (user_id = auth.uid()::text);
 
 CREATE POLICY "Users can insert own memories"
   ON memories FOR INSERT
-  WITH CHECK (user_id = current_user OR user_id = auth.uid()::text);
+  WITH CHECK (user_id = auth.uid()::text);
 
 CREATE POLICY "Users can delete own memories"
   ON memories FOR DELETE
-  USING (user_id = current_user OR user_id = auth.uid()::text);
+  USING (user_id = auth.uid()::text);
