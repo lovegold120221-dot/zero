@@ -140,7 +140,8 @@ export function WhatsAppOnboarding({ user, onComplete, onSkip }: WhatsAppOnboard
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.uid, config: { permissions } }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
       if (!res.ok) throw new Error(data.error || 'Save failed');
 
       // Trigger full WhatsApp history sync in background

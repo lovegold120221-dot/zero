@@ -68,7 +68,8 @@ export async function getWhatsAppStatus(userId: string): Promise<{
 }> {
   const res = await fetch(`${getBackendUrl()}/api/whatsapp/status/${encodeURIComponent(userId)}`);
   if (!res.ok) return { status: 'error', error: `Server returned ${res.status}` };
-  return res.json();
+  const text = await res.text();
+  return text ? JSON.parse(text) : {};
 }
 
 export async function disconnectWhatsApp(userId: string): Promise<void> {
@@ -105,7 +106,8 @@ export async function callWhatsAppTool(
 export async function getWhatsAppMessages(userId: string, limit = 20): Promise<{ messages: any[] }> {
   const res = await fetch(`${getBackendUrl()}/api/whatsapp/messages/${encodeURIComponent(userId)}?limit=${limit}`);
   if (!res.ok) throw new Error(`Server returned ${res.status}`);
-  return res.json();
+  const text = await res.text();
+  return text ? JSON.parse(text) : {};
 }
 
 export async function getWhatsAppAdminOverview(userId: string): Promise<any> {
