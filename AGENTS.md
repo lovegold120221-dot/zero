@@ -3,98 +3,139 @@
 ## Commands
 
 ```
-npm run dev       # Start frontend server on port 3000, binds 0.0.0.0
-npm run dev:api   # Start backend Express server on port 4200, binds 0.0.0.0
-npm run dev:full  # Start both frontend and backend servers
+npm run dev       # Frontend on port 3000, binds 0.0.0.0
+npm run dev:api   # Backend Express server on port 4200, binds 0.0.0.0
+npm run dev:full  # Both frontend and backend
 npm run build     # Production build via Vite
 npm run lint      # Typecheck only (tsc --noEmit)
-npm run docker:whatsapp:up    # Run WhatsApp backend in Docker on port 4200
-npm run docker:whatsapp:down  # Stop WhatsApp backend Docker stack
-npm run smoke:whatsapp        # Check /api/health for the backend
+npm run start     # Production: run backend via tsx server/index.ts
 ```
 
 There is no test framework, no CI, and no pre-commit hooks.
 
 ## Environment
 
-- `.env` holds all secrets. It is gitignored but an example is at `.env.example`.
+- `.env` is gitignored; copy `.env.example` as a starting point.
 - `GEMINI_API_KEY` is injected as `process.env.GEMINI_API_KEY` (not `VITE_`-prefixed) via `vite.config.ts` `define`. Do not rename this key.
-- Firebase config (`VITE_FIREBASE_*`), Google OAuth (`VITE_GOOGLE_CLIENT_ID`), and Supabase URL/key are typically `VITE_`-prefixed env vars.
-- `DISABLE_HMR=true` disables HMR (used in AI Studio to prevent flickering during agent edits). Keep this check in `vite.config.ts`.
-- `APP_URL` is injected by AI Studio at runtime for Cloud Run deployments. Do not hardcode a base URL.
-- `VITE_SANDBOX_URL` / `VITE_BACKEND_URL` point to the backend server (default `http://localhost:4200`; set to the ngrok HTTPS URL when tunneling).
-- Server-only vars (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `SANDBOX_PORT`, `SANDBOX_ROOT`, `WA_AUTH_ROOT`, `WA_LOG_LEVEL`, `WA_SYNC_FULL_HISTORY`, `WA_HISTORY_LIMIT`, `WA_HISTORY_RESPONSE_LIMIT`) are read by `server/index.ts` via `dotenv/config`.
+- Firebase config (`VITE_FIREBASE_*`), Google OAuth (`VITE_GOOGLE_CLIENT_ID`), Supabase URL/key are `VITE_`-prefixed env vars. `vite.config.ts` also maps unprefixed equivalents as fallback.
+- `DISABLE_HMR=true` disables HMR (AI Studio compatibility). Keep this check in `vite.config.ts`.
+- `APP_URL` is injected by AI Studio at runtime for Cloud Run. Do not hardcode a base URL.
+- `VITE_SANDBOX_URL` / `VITE_BACKEND_URL` point to the backend (default `http://localhost:4200`; use the ngrok HTTPS URL when tunneling).
+- Server-only vars (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `PORT`/`SANDBOX_PORT`, `WA_AUTH_ROOT`, `WA_LOG_LEVEL`, `WA_SYNC_FULL_HISTORY`, `WA_HISTORY_LIMIT`, `WA_HISTORY_RESPONSE_LIMIT`, `CEREBRAS_API_KEY`, `OLLAMA_API_KEY`) are read by `server/index.ts` via `dotenv/config`.
+- `OLLAMA_API_KEY` must NOT be `VITE_`-prefixed (server-only credential).
 
-## WhatsApp Integration (Backend)
+## Path Alias
 
-- **Base URL**: local Docker/server default `http://localhost:4200`; expose with `ngrok http 4200` when a public URL is needed. Do not hardcode the old VPS URL.
-- **Endpoints**:
-  - **Health**: `GET /api/health`
-  - **QR Code**: `GET /api/whatsapp/qr/{userId}` (returns raw PNG)
-  - **Tool Execution**: `POST /api/whatsapp/tool`
-  - **Call History**: `POST /api/whatsapp/tool` with `tool=getCalls`
-  - **Webhook Configuration**: `POST /api/whatsapp/admin/config` (to set `webhookUrl`)
-- **Supported tools**: `readChats`, `getContacts`, `getGroups`, `getMessageHistory`, `getCalls`, `sendMessage`, `sendGroupMessage`, `sendMedia`, `sendAudio`, `sendReaction`, `sendButtons`.
-- **Delegated send rule**: outbound WhatsApp tools require `permissions.requireUserApproval=true`, `permissions.approvedByUser=true`, and `permissions.mode="delegated_send"`. Beatrice must preview the message and wait for `SEND`/`Approved` before sending.
-- **History mimicry**: `WA_SYNC_FULL_HISTORY=true` makes Baileys request desktop-style full history. Persist up to `WA_HISTORY_LIMIT` messages (default 50000) and allow `getMessageHistory` responses up to `WA_HISTORY_RESPONSE_LIMIT` (default 2000) so Beatrice can mimic the user's own `fromMe:true` WhatsApp style.
+`@` → `.` (project root). Defined in both `vite.config.ts` and `tsconfig.json`. Example: `import { foo } from '@/src/lib/bar'`.
 
-Single-package Vite + React 19 + TypeScript app + optional Express backend (server/). Firebase handles auth and data, Gemini Live API handles the AI voice pipeline. The backend server provides WhatsApp integration (Baileys + Cloud API) and web glance API; run separately with `npx tsx server/index.ts`.
+## Architecture
+
+Single-package Vite + React 19 + TypeScript app + Express backend (`server/`). Firebase handles auth, Supabase handles persistent data (settings, memories, tool outputs), Gemini Live API handles the AI voice pipeline.
 
 **Entry point:** `index.html` → `src/main.tsx` → `src/App.tsx`
 
-**`src/App.tsx`** (~200 lines) is the slim orchestrator: auth state, Firebase init, user routing (EntryFlow → AuthPage or BeatriceAgent). All business logic is extracted to separate modules.
+**`src/App.tsx`** is the slim orchestrator: auth state, Firebase init, theme state, user routing (EntryFlow → AuthPage or BeatriceAgent).
 
-**Key source files:**
+### Key source files
+
 | File | Purpose |
 |---|---|
-| `src/App.tsx` | Root orchestrator: auth state, user routing |
-| `src/constants.ts` | Shared constants (`LANGUAGES` array) |
-| `src/components/BeatriceAgent.tsx` | Main AI voice agent: Gemini Live session, audio pipeline, tool calling, settings panel, camera feed, document generation |
-| `src/components/AuthPage.tsx` | Auth UI: sign in / register / reset password forms, Google OAuth trigger via props |
-| `src/components/EntryFlow.tsx` | Splash → Onboarding flow + `isGoogleLinked` helper |
+| `src/App.tsx` | Root orchestrator: auth, theme, user routing |
+| `src/components/BeatriceAgent.tsx` | Main AI voice agent: Gemini Live session, audio pipeline, 20+ tool calls, settings, camera, document generation |
+| `src/components/AuthPage.tsx` | Auth UI: sign in / register / reset, Google OAuth |
+| `src/components/EntryFlow.tsx` | Splash → Onboarding flow |
+| `src/components/ProfilePage.tsx` | User settings: persona, language, memory, content filter, theme |
+| `src/components/ChatPage.tsx` | Text chat interface with markdown rendering |
+| `src/components/VideoPage.tsx` | Camera feed and screen sharing |
+| `src/components/WhatsAppPortal.tsx` | WhatsApp pairing wizard and chat browser |
+| `src/components/UnifiedTranscript.tsx` | Animated word-by-word transcript |
 | `src/firebase.ts` | Firebase init + `handleFirestoreError()` helper |
 | `src/lib/audio.ts` | `AudioStreamer` (TTS playback) and `AudioRecorder` (mic capture) |
-| `src/components/UnifiedTranscript.tsx` | Animated word-by-word transcript |
-| `src/index.css` | Single `@import "tailwindcss";` line (Tailwind v4) |
-| `vite.config.ts` | Path alias `@` → `.`, Tailwind v4 plugin, env injection |
-| `src/components/WhatsAppSettings.tsx` | WhatsApp pairing UI, permission toggles, Firestore sync |
-| `src/lib/whatsappClient.ts` | WhatsApp backend API client (pair, send, status, contacts) |
-| `src/lib/supabase.ts` | Supabase client setup + error handling |
+| `src/lib/supabase.ts` | Supabase client setup + `saveToolResult`/`fetchToolResult` |
 | `src/lib/supabaseStorage.ts` | Avatar + knowledge file upload/list/delete to Supabase Storage |
-| `server/index.ts` | Express backend: WhatsApp + web glance + health API routes |
-| `server/whatsapp.ts` | WhatsAppManager: Baileys / Cloud API session lifecycle |
+| `src/lib/whatsappClient.ts` | WhatsApp backend API client (pair, send, status, contacts) |
+| `src/lib/workspace.ts` | IndexedDB workspace + Drive upload |
+| `src/lib/codingAgentClient.ts` | Ollama Cloud coding agent client |
+| `src/constants.ts` | Shared `LANGUAGES` array (147 entries) |
+| `src/index.css` | Full theme system (dark/light) + `@import "tailwindcss"` |
+| `vite.config.ts` | Path alias, Tailwind v4 plugin, env injection |
+| `server/index.ts` | Express backend: WhatsApp, Belgian tools, sandbox, Cerebras browser, Ollama proxy, web glance, health |
+| `server/whatsapp.ts` | `WhatsAppManager`: Baileys session lifecycle, SSE streaming |
 | `server/whatsapp-tools.ts` | Permission-gated WhatsApp tool handlers |
+| `server/belgian-tools.ts` | 10 Belgian administrative tools |
+| `server/eburon.ts` | `EburonWorker`: server-side HTML doc generation (webpages, dashboards, reports) |
+| `server/ollama-cloud.ts` | Ollama Cloud API proxy for coding agent |
+| `api/coding-agent.ts` | Vercel serverless function for coding agent |
+
+### Additional directories
+
+- `flutter/` — Full Flutter project (separate codebase, not part of the web build).
+- `functions/` — Firebase Cloud Functions (excluded from `tsconfig.json`). Separate `package.json`.
+- `docs/` — Architecture diagrams (`.mmd`/`.svg`/`.png`). Useful for understanding system flow.
+- `api/` — Vercel serverless functions.
 
 ## Firebase + Firestore
 
 - Config is hardcoded in `src/firebase.ts`.
 - Firestore blueprint: `firebase-blueprint.json` defines `User` and `Message` schemas.
 - **Messages are immutable** — `allow update, delete: if false` in `firestore.rules`. Never attempt to edit or delete messages.
-- Every Firestore operation must use `handleFirestoreError()` from `src/firebase.ts` for structured error logging (includes auth context).
-- Security invariants in `security_spec.md` must be preserved: user data isolation, timestamp validation (`== request.time`), role constrained to `user`/`model`, field validation by whitelist, length limits (`personaName` ≤ 50, `customPrompt` ≤ 2000, `message.text` ≤ 5000, document ID ≤ 128 chars matching `^[a-zA-Z0-9_\-]+$`).
+- Every Firestore operation must use `handleFirestoreError()` from `src/firebase.ts` (includes auth context).
+- Security invariants from `security_spec.md` must be preserved: user data isolation, timestamp validation (`== request.time`), role constrained to `user`/`model`, field validation by whitelist, length limits (`personaName` ≤ 50, `customPrompt` ≤ 2000, `message.text` ≤ 5000, document ID ≤ 128 chars matching `^[a-zA-Z0-9_\-]+$`).
 
 ## Gemini Live API
 
-- SDK: `@google/genai` (`^1.29.0`), model: `gemini-2.5-flash-native-audio-preview-09-2025`.
-- Audio modalities are used for real-time bidirectional voice; tool calls (`functionCall` in `onmessage` callback) drive WhatsApp, Google Services (Gmail, Calendar, Tasks, Contacts), web search, document generation, camera, and phone dialing.
-- 17 tools declared. Execution is a single switch statement inside the `onmessage` closure.
-- The voice personality prompt (`VOICE_PERSONALITY_PROMPT`) is a ~350-line constant in `src/components/BeatriceAgent.tsx`. Do not alter it casually — it defines the entire agent persona.
-- Permissions (10 boolean toggles, all default `false`) are injected into the system instruction at session start. Changes require session reconnect.
+- SDK: `@google/genai` (`^1.29.0`), model: `gemini-2.5-flash-native-audio-preview-12-2025`.
+- Real-time bidirectional audio via WebSocket. Audio output is PCM16 mono 24kHz, streamed via `AudioStreamer` (decode → queue → schedule → play).
+- 20+ tools declared. Execution is a single switch statement inside the `onmessage` closure.
+- The voice personality prompt (`VOICE_PERSONALITY_PROMPT`) is a ~460-line constant in `src/components/BeatriceAgent.tsx`. Do not alter it casually — it defines the entire agent persona.
+- Permissions (10 boolean toggles, all default `true`) are injected into the system instruction at session start. Changes require session reconnect.
 - Document generation uses a separate non-voice Gemini session (`gemini-2.5-flash`, non-streaming).
-- Audio output is PCM16 mono 24kHz, streamed via `AudioStreamer` (decode → queue → schedule → play).
+- Web search uses Gemini's built-in `googleSearch` grounding (no separate `web_glance` tool).
+
+## WhatsApp Integration (Backend)
+
+- **Provider**: Baileys only (`@whiskeysockets/baileys`). No Go WhatsApp or alternative providers.
+- **Base URL**: local Docker/server default `http://localhost:4200`; expose with `ngrok http 4200` when a public URL is needed.
+- **Endpoints**:
+  - **Health**: `GET /api/health`
+  - **QR Code**: `GET /api/whatsapp/qr/{userId}` (returns raw PNG)
+  - **Tool Execution**: `POST /api/whatsapp/tool`
+  - **SSE Stream**: `GET /api/whatsapp/stream/:userId` (real-time message events)
+  - **Webhook Config**: `POST /api/whatsapp/admin/config` (set `webhookUrl`)
+- **Delegated send rule**: outbound WhatsApp tools require `permissions.requireUserApproval=true`, `permissions.approvedByUser=true`, and `permissions.mode="delegated_send"`. Beatrice must preview the message and wait for `SEND`/`Approved` before sending.
+- **History mimicry**: `WA_SYNC_FULL_HISTORY=true` makes Baileys request desktop-style full history. Persist up to `WA_HISTORY_LIMIT` messages (default 50000) and allow `getMessageHistory` responses up to `WA_HISTORY_RESPONSE_LIMIT` (default 2000) so Beatrice can mimic the user's `fromMe:true` WhatsApp style.
+
+## Supabase (Primary Data Store)
+
+- Used for persistent data: `user_settings`, `memories`, `tool_outputs`, `messages`.
+- **`tool_outputs` table is the single source of truth** for tool results. The UI (`DocumentViewer`) fetches only by ID from Supabase. Never render tool output directly in the client.
+- `add_to_memory` and `search_memory` store/retrieve facts in the `memories` table. 10 most recent memories are loaded into the system prompt at session start.
+- Database migrations: `supabase-migration-settings.sql` and `supabase-migration-memories.sql`.
+
+## Memory System
+
+- `add_to_memory` — saves user facts/preferences to Supabase `memories` table with optional tags.
+- `search_memory` — full-text search on stored memories.
+- 10 most recent memories pre-loaded into system prompt at session start.
+- Memoirs stored per-user with RLS.
+
+## Sandbox & Cerebras Sub-Agents
+
+- `run_sandbox_task` — delegates complex tasks to Gemini API via backend (`POST /api/sandbox/run`). Results displayed in Eburon PC sandbox viewer (`DocumentViewer`).
+- `cerebras_browser_task` — automated web browsing via Cerebras + Browser-Use. Python wrapper at `scripts/cerebras_browser.py`. Setup: `bash scripts/setup-cerebras.sh`. Requires `CEREBRAS_API_KEY` in `.env`.
 
 ## UI / Styling
 
 - Tailwind CSS v4 via `@tailwindcss/vite` plugin — uses `@import "tailwindcss"` syntax, no `tailwind.config.*`.
+- Full dark + light theme system defined in `src/index.css` with CSS custom properties (`var(--bg-base)`, `var(--text-primary)`, `var(--accent)`, etc.) and 70+ override rules for `.theme-light`.
+- Dark theme default: `#050505` background, warm peach (`#d0a78b`) accent.
 - Animation library: `motion` (formerly framer-motion), imported as `motion/react`.
 - Icons: `lucide-react`.
-- Markdown rendering: `react-markdown` for chat messages.
-- Dark theme: `#050505` background, amber/warm peach (`#d0a78b`) accent.
+- Markdown rendering: `react-markdown`.
+- **Reference UI**: `public/reference-ui.html` is the design source of truth for UI changes (orb animation, blob drift keyframes, peach glow, transcription area, bottom nav).
 
-## Reference UI
+## Tool Implementation Rules
 
-`public/reference-ui.html` contains the canonical landing page design with the orb animation, blob drift keyframes, peach glow, transcription area, and bottom nav. Use this as the design source of truth for UI changes.
-
-## File to ignore
-
-`temp.txt` is scrap data (Gemini SDK type definitions). Do not reference, import, or modify it.
+- **Client-side**: Google Services tools (Gmail, Calendar, Drive, Tasks, Contacts) run in the browser using the user's OAuth token.
+- **Server-side**: WhatsApp and Belgian tools are proxied through the Express backend for session isolation.
+- **Supabase**: All generated content (invoices, documents, webpages) must be saved to `tool_outputs` and rendered by `DocumentViewer` via Supabase fetch, not direct client-side injection.
