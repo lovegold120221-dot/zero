@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant U as User
+    participant FE as App (React)
+    participant FA as Firebase Auth
+    participant FS as Firestore
+    participant SB as Supabase
+    participant GL as Gemini Live API
+
+    U->>FE: Clicks Sign In
+    FE->>FA: signInWithPopup(Google)
+    FA->>U: Google Account Picker
+    U->>FA: Select account
+    FA->>FE: UserCredential (uid, email, displayName)
+    FE->>FS: Create User document
+    FE->>SB: Upsert user_settings
+    FE->>GL: Start session (auth context)
+    GL->>FE: Live connection established
+    FE->>U: Show Beatrice interface

@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile",
+      "type": "object",
+      "properties": {
+        "createdAt": { "type": "timestamp" },
+        "updatedAt": { "type": "timestamp" },
+        "displayName": { "type": "string" },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "personaName": { "type": "string" },
+            "selectedVoice": { "type": "string" },
+            "customPrompt": { "type": "string" },
+            "contextSize": { "type": "number" }
+          }
+        }
+      },
+      "required": ["createdAt", "updatedAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Chat message",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "enum": ["user", "model"] },
+        "text": { "type": "string" },
+        "timestamp": { "type": "timestamp" }
+      },
+      "required": ["role", "text", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "/users/{userId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Conversation history"
+    }
+  }
+}

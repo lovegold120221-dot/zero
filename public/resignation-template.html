@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Letter of Resignation - Template</title>
+<style>
+:root{--primary:#1e293b;--accent:#64748b;--bg:#f8fafc;--text:#1e293b;--muted:#64748b;--border:#e2e8f0;--font-serif:'Georgia',serif;--font-sans:'Inter',-apple-system,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
+.editor{width:340px;background:#fff;border-right:1px solid var(--border);padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;flex-shrink:0}
+.editor h2{font-size:1.1rem;color:var(--primary);border-bottom:2px solid var(--border);padding-bottom:8px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.form-group input,.form-group textarea{padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.9rem;outline:none;transition:border-color .2s;font-family:var(--font-sans)}
+.form-group textarea{resize:vertical;min-height:60px}
+.form-group input:focus,.form-group textarea:focus{border-color:var(--accent)}
+.btn-print{background:var(--primary);color:#fff;padding:12px;border:none;border-radius:6px;font-weight:600;cursor:pointer;margin-top:auto}
+.btn-print:hover{background:#0f172a}
+.preview{flex:1;overflow-y:auto;padding:40px;display:flex;justify-content:center;background:#f1f5f9}
+.paper{width:800px;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.08);padding:55px 75px;font-family:var(--font-serif);font-size:11pt;line-height:1.7;color:#111;height:fit-content}
+.resign-date{text-align:right;margin-bottom:30px;font-family:var(--font-sans);color:var(--muted);font-size:.9rem}
+.resign-recipient{margin-bottom:20px}
+.resign-recipient p{line-height:1.5}
+.resign-body p{margin-bottom:12px}
+.resign-closing{margin-top:35px}
+.resign-closing p{line-height:1.8;font-family:var(--font-sans)}
+.resign-sign{margin-top:45px;font-family:var(--font-sans)}
+.resign-sign .name{font-weight:700;font-size:1rem}
+.resign-sign .detail{color:var(--muted);font-size:.85rem}
+.highlight{background:rgba(100,116,139,.06);border-bottom:1px dashed var(--accent);padding:0 2px;font-family:var(--font-sans)}
+@media(max-width:900px){body{flex-direction:column;height:auto;overflow:visible}
+.editor{width:100%;border-right:none;border-bottom:1px solid var(--border)}
+.preview{padding:15px}
+.paper{width:100%;padding:25px 20px}}
+@media print{body{background:#fff;display:block;overflow:visible}
+.editor{display:none!important}
+.preview{background:#fff;padding:0;overflow:visible;display:block}
+.paper{box-shadow:none;width:100%;margin:0;padding:40px 50px}
+.highlight{border-bottom:none;background:transparent}}
+</style>
+</head>
+<body>
+<div class="editor">
+<h2>Resignation Letter</h2>
+<div class="form-group"><label>Date</label><input type="date" id="resDate" value="2026-06-15"></div>
+<div class="form-group"><label>Recipient (Manager/HR)</label><input type="text" id="resRecip" value="Board of Directors — Ariolas BV"></div>
+<div class="form-group"><label>Your Name</label><input type="text" id="resName" value="Joe Lernout"></div>
+<div class="form-group"><label>Your Position</label><input type="text" id="resPosition" value="Chief Executive Officer"></div>
+<div class="form-group"><label>Last Working Day</label><input type="date" id="lastDay" value="2026-08-31"></div>
+<div class="form-group"><label>Reason / Body (optional)</label><textarea id="resBody" rows="4">After careful consideration, I have decided to step down from my role as CEO to pursue new opportunities and personal ventures. This was not an easy decision, and I am deeply grateful for the trust placed in me throughout my tenure.</textarea></div>
+<button class="btn-print" onclick="window.print()">Print / PDF</button>
+</div>
+<div class="preview">
+<div class="paper">
+<div class="resign-date"><span id="p-resDate">15 June 2026</span></div>
+<div class="resign-recipient">
+<p id="p-resRecip">Board of Directors — Ariolas BV</p>
+<p>Rue de la Loi 16, 1000 Brussels</p>
+</div>
+<div class="resign-body">
+<p>Dear <span id="p-resRecip2">Board Members</span>,</p>
+<p>Please accept this letter as formal notification that I am resigning from my position as <span id="p-resPosition">Chief Executive Officer</span> at Ariolas BV.</p>
+<p id="p-resBody">After careful consideration, I have decided to step down from my role as CEO to pursue new opportunities and personal ventures. This was not an easy decision, and I am deeply grateful for the trust placed in me throughout my tenure.</p>
+<p>In accordance with my contractual notice period, my last working day will be <span id="p-lastDay">31 August 2026</span>. I am committed to ensuring a smooth transition and am happy to assist with handover procedures during this period.</p>
+<p>I wish the company continued success.</p>
+</div>
+<div class="resign-closing">
+<p>Yours sincerely,</p>
+</div>
+<div class="resign-sign">
+<p class="name" id="p-resName">Joe Lernout</p>
+<p class="detail" id="p-resPosition2">Chief Executive Officer</p>
+</div>
+</div>
+</div>
+<script>
+function updatePreview(){const d=document.getElementById('resDate').value;if(d){const p=d.split('-');const ms=['January','February','March','April','May','June','July','August','September','October','November','December'];document.getElementById('p-resDate').textContent=parseInt(p[2])+' '+ms[parseInt(p[1])-1]+' '+p[0]}
+const r=document.getElementById('resRecip').value;document.getElementById('p-resRecip').textContent=r;const short=r.split('—')[0]||r.split(',')[0]||r;document.getElementById('p-resRecip2').textContent=short.trim();document.getElementById('p-resName').textContent=document.getElementById('resName').value;const pos=document.getElementById('resPosition').value;document.getElementById('p-resPosition').textContent=pos;document.getElementById('p-resPosition2').textContent=pos;document.getElementById('p-resBody').textContent=document.getElementById('resBody').value;const ld=document.getElementById('lastDay').value;if(ld){const p=ld.split('-');const ms=['January','February','March','April','May','June','July','August','September','October','November','December'];document.getElementById('p-lastDay').textContent=parseInt(p[2])+' '+ms[parseInt(p[1])-1]+' '+p[0]}}
+document.querySelectorAll('.editor input,.editor textarea').forEach(el=>el.addEventListener('input',updatePreview));updatePreview();
+</script>
+</body>
+</html>

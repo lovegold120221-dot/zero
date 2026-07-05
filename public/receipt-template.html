@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Receipt - Template</title>
+<style>
+:root{--primary:#1e293b;--accent:#059669;--bg:#f8fafc;--text:#1e293b;--muted:#64748b;--border:#e2e8f0;--font-serif:'Georgia',serif;--font-sans:'Inter',-apple-system,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden}
+.editor{width:340px;background:#fff;border-right:1px solid var(--border);padding:24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;flex-shrink:0}
+.editor h2{font-size:1.1rem;color:var(--primary);border-bottom:2px solid var(--accent);padding-bottom:8px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.form-group input,.form-group textarea{padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.9rem;outline:none;transition:border-color .2s;font-family:var(--font-sans)}
+.form-group textarea{resize:vertical;min-height:50px}
+.form-group input:focus,.form-group textarea:focus{border-color:var(--accent)}
+.btn-print{background:var(--primary);color:#fff;padding:12px;border:none;border-radius:6px;font-weight:600;cursor:pointer;margin-top:auto}
+.btn-print:hover{background:#0f172a}
+.preview{flex:1;overflow-y:auto;padding:40px;display:flex;justify-content:center;background:#f1f5f9}
+.paper{width:600px;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.08);padding:40px 50px;font-family:var(--font-sans);font-size:9.5pt;color:#111;height:fit-content}
+.receipt-header{text-align:center;border-bottom:2px double var(--primary);padding-bottom:15px;margin-bottom:20px}
+.receipt-header h1{font-size:1.5rem;text-transform:uppercase;letter-spacing:.1em;color:var(--primary)}
+.receipt-header p{color:var(--muted);font-size:.8rem;margin-top:4px}
+.receipt-meta{display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:15px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;margin:10px 0}
+th{background:var(--primary);color:#fff;padding:6px 10px;text-align:left;font-size:.65rem;text-transform:uppercase;letter-spacing:.05em}
+td{padding:6px 10px;border-bottom:1px dashed var(--border)}
+.receipt-total{text-align:right;margin-top:10px;padding-top:10px;border-top:2px solid var(--primary)}
+.receipt-total .paid{font-size:1.3rem;font-weight:700;color:var(--accent)}
+.receipt-footer{text-align:center;margin-top:20px;padding-top:15px;border-top:1px solid var(--border);font-size:.75rem;color:var(--muted)}
+.highlight{background:rgba(5,150,105,.06);border-bottom:1px dashed var(--accent);padding:0 2px}
+@media(max-width:900px){body{flex-direction:column;height:auto;overflow:visible}
+.editor{width:100%;border-right:none;border-bottom:1px solid var(--border)}
+.preview{padding:15px}
+.paper{width:100%;padding:20px}
+.receipt-meta{flex-direction:column;gap:4px}}
+@media print{body{background:#fff;display:block;overflow:visible}
+.editor{display:none!important}
+.preview{background:#fff;padding:0;overflow:visible;display:block}
+.paper{box-shadow:none;width:100%;margin:0;padding:30px 40px}
+.highlight{border-bottom:none;background:transparent}}
+</style>
+</head>
+<body>
+<div class="editor">
+<h2>Payment Receipt</h2>
+<div class="form-group"><label>Receipt #</label><input type="text" id="recNum" value="RCPT-2026-038"></div>
+<div class="form-group"><label>Date</label><input type="date" id="recDate" value="2026-06-15"></div>
+<div class="form-group"><label>Customer Name</label><input type="text" id="custName" value="TechCorp SA"></div>
+<div class="form-group"><label>Payment Method</label><input type="text" id="payMethod" value="Bank Transfer — BE68 1234 5678 9012"></div>
+<div class="form-group"><label>Amount Paid (€)</label><input type="number" id="amount" value="15125"></div>
+<div class="form-group"><label>Description</label><textarea id="payDesc" rows="2">Enterprise Software License — Q3 2026\nInvoice INV-2026-0042</textarea></div>
+<button class="btn-print" onclick="window.print()">Print / PDF</button>
+</div>
+<div class="preview">
+<div class="paper">
+<div class="receipt-header">
+<h1>Receipt of Payment</h1>
+<p><span id="p-recNum">RCPT-2026-038</span> &nbsp;|&nbsp; <span id="p-recDate">15/06/2026</span></p>
+</div>
+<div class="receipt-meta">
+<span><strong>Customer:</strong> <span id="p-custName">TechCorp SA</span></span>
+<span><strong>Payment:</strong> <span id="p-payMethod">Bank Transfer</span></span>
+</div>
+<table>
+<thead><tr><th>Description</th><th>Amount</th></tr></thead>
+<tbody>
+<tr><td id="p-payDesc">Enterprise Software License — Q3 2026 (Invoice INV-2026-0042)</td><td id="p-amount">€15,125.00</td></tr>
+</tbody>
+</table>
+<div class="receipt-total">
+<p class="paid">Paid: <span id="p-amount2">€15,125.00</span></p>
+<p style="font-size:.8rem;color:var(--muted);margin-top:4px">Payment received in full — no outstanding balance</p>
+</div>
+<div class="receipt-footer">
+<p>Ariolas BV — Rue de la Loi 16, 1000 Brussels — BE 0799.123.456</p>
+<p style="margin-top:4px">Thank you for your business</p>
+</div>
+</div>
+</div>
+<script>
+function updatePreview(){document.getElementById('p-recNum').textContent=document.getElementById('recNum').value;const d=document.getElementById('recDate').value;if(d){const p=d.split('-');document.getElementById('p-recDate').textContent=`${p[2]}/${p[1]}/${p[0]}`}
+document.getElementById('p-custName').textContent=document.getElementById('custName').value;document.getElementById('p-payMethod').textContent=document.getElementById('payMethod').value;document.getElementById('p-payDesc').textContent=document.getElementById('payDesc').value.replace(/\n/g,' — ');const a=parseFloat(document.getElementById('amount').value)||0;const fmt=n=>'€'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});const f=fmt(a);document.getElementById('p-amount').textContent=f;document.getElementById('p-amount2').textContent=f}
+document.querySelectorAll('.editor input,.editor textarea').forEach(el=>el.addEventListener('input',updatePreview));updatePreview();
+</script>
+</body>
+</html>

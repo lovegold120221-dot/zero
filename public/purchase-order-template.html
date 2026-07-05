@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Order - Template</title>
+    <style>
+        :root {
+            --primary: #1a365d;
+            --accent: #2b6cb0;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --font-serif: 'Georgia', serif;
+            --font-sans: 'Inter', -apple-system, sans-serif
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden
+        }
+
+        .editor {
+            width: 340px;
+            background: #fff;
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex-shrink: 0
+        }
+
+        .editor h2 {
+            font-size: 1.1rem;
+            color: var(--primary);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 8px
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px
+        }
+
+        .form-group label {
+            font-size: .75rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .05em
+        }
+
+        .form-group input,
+        .form-group textarea {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: .9rem;
+            outline: none;
+            transition: border-color .2s;
+            font-family: var(--font-sans)
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 50px
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: var(--accent)
+        }
+
+        .btn-print {
+            background: var(--primary);
+            color: #fff;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: auto
+        }
+
+        .btn-print:hover {
+            background: #0f2440
+        }
+
+        .preview {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            background: #f1f5f9
+        }
+
+        .paper {
+            width: 800px;
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+            padding: 45px 65px;
+            font-family: var(--font-serif);
+            font-size: 10.5pt;
+            line-height: 1.6;
+            color: #111;
+            height: fit-content
+        }
+
+        .po-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 25px
+        }
+
+        .po-header h1 {
+            font-size: 1.6rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--primary)
+        }
+
+        .po-header .meta {
+            text-align: right;
+            font-family: var(--font-sans);
+            font-size: .85rem;
+            color: var(--muted)
+        }
+
+        .po-supplier {
+            display: flex;
+            justify-content: space-between;
+            gap: 30px;
+            margin-bottom: 20px;
+            font-family: var(--font-sans);
+            font-size: .9rem
+        }
+
+        .po-supplier .box {
+            flex: 1
+        }
+
+        .po-supplier .box h3 {
+            font-size: .7rem;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-weight: 600;
+            margin-bottom: 4px
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-family: var(--font-sans);
+            font-size: .85rem
+        }
+
+        th {
+            background: var(--primary);
+            color: #fff;
+            padding: 8px 10px;
+            text-align: left;
+            font-size: .7rem;
+            text-transform: uppercase
+        }
+
+        td {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .totals {
+            text-align: right;
+            font-family: var(--font-sans);
+            margin-top: 10px
+        }
+
+        .totals p {
+            font-size: .9rem;
+            margin-bottom: 3px;
+            color: var(--muted)
+        }
+
+        .totals .grand {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary)
+        }
+
+        .terms-box {
+            margin-top: 20px;
+            padding: 12px 15px;
+            background: #f7fafc;
+            border-radius: 6px;
+            font-family: var(--font-sans);
+            font-size: .8rem;
+            color: var(--muted)
+        }
+
+        .highlight {
+            background: rgba(43, 108, 176, .06);
+            border-bottom: 1px dashed var(--accent);
+            padding: 0 2px;
+            font-family: var(--font-sans)
+        }
+
+        .po-meta-right {
+            text-align: right;
+            font-family: var(--font-sans);
+            font-size: .85rem;
+            color: var(--muted)
+        }
+
+        @media(max-width:900px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                overflow: visible
+            }
+
+            .editor {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border)
+            }
+
+            .po-header,
+            .po-supplier {
+                flex-direction: column;
+                gap: 10px
+            }
+
+            .po-header .meta {
+                text-align: left
+            }
+
+            .preview {
+                padding: 15px
+            }
+
+            .paper {
+                width: 100%;
+                padding: 25px 20px
+            }
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                display: block;
+                overflow: visible
+            }
+
+            .editor {
+                display: none !important
+            }
+
+            .preview {
+                background: #fff;
+                padding: 0;
+                overflow: visible;
+                display: block
+            }
+
+            .paper {
+                box-shadow: none;
+                width: 100%;
+                margin: 0;
+                padding: 40px 50px
+            }
+
+            .highlight {
+                border-bottom: none;
+                background: transparent
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="editor">
+        <h2>Purchase Order</h2>
+        <div class="form-group"><label>PO Number</label><input type="text" id="poNum" value="PO-2026-091"
+                title="Purchase order number" placeholder="Enter PO number"></div>
+        <div class="form-group"><label>Date</label><input type="date" id="poDate" value="2026-06-15"
+                title="Purchase order date" placeholder="Select date"></div>
+        <div class="form-group"><label>Supplier</label><input type="text" id="supplier" value="CloudTech Solutions GmbH"
+                title="Supplier name" placeholder="Enter supplier"></div>
+        <div class="form-group"><label>Item Description</label><textarea id="poItems" rows="2" title="Item descriptions"
+                placeholder="Enter item descriptions">12x Dell UltraSharp U3224KB Monitors\n8x MacBook Pro M4 14-inch\n5x Standing Desks (Jarvis)</textarea>
+        </div>
+        <div class="form-group"><label>Total Amount (€)</label><input type="number" id="poTotal" value="48650"
+                title="Total amount" placeholder="Enter total amount"></div>
+        <div class="form-group"><label>Delivery Date</label><input type="date" id="delDate" value="2026-07-10"
+                title="Delivery date" placeholder="Select delivery date"></div>
+        <button class="btn-print" onclick="window.print()">Print / PDF</button>
+    </div>
+    <div class="preview">
+        <div class="paper">
+            <div class="po-header">
+                <div>
+                    <h1>Purchase Order</h1>
+                </div>
+                <div class="po-meta-right">
+                    <p><strong id="p-poNum">PO-2026-091</strong></p>
+                    <p>Date: <span id="p-poDate">15/06/2026</span></p>
+                </div>
+            </div>
+            <div class="po-supplier">
+                <div class="box">
+                    <h3>Buyer</h3>
+                    <p>Ariolas BV</p>
+                    <p>Rue de la Loi 16, 1000 Brussels</p>
+                    <p>BE 0799.123.456</p>
+                </div>
+                <div class="box">
+                    <h3>Supplier</h3>
+                    <p id="p-supplier">CloudTech Solutions GmbH</p>
+                    <p>Bahnhofstrasse 42, 8001 Zürich</p>
+                    <p>CHE-123.456.789</p>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Description</th>
+                        <th>Qty</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Dell UltraSharp U3224KB Monitors</td>
+                        <td>12</td>
+                        <td>€18,000.00</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>MacBook Pro M4 14-inch</td>
+                        <td>8</td>
+                        <td>€21,600.00</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>Standing Desks (Jarvis)</td>
+                        <td>5</td>
+                        <td>€5,250.00</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="totals">
+                <p>VAT (21%): <span id="p-poVat">€8,416.50</span></p>
+                <p class="grand">Total: <span id="p-poTotal">€48,650.00</span></p>
+            </div>
+            <div class="terms-box">
+                <strong>Delivery:</strong> <span id="p-delDate">10 July 2026</span> — FOB Brussels. Payment within 30
+                days of invoice. Terms and conditions as per master agreement ref. MSA-2025-003.
+            </div>
+        </div>
+    </div>
+    <script>
+        function updatePreview() {
+            document.getElementById('p-poNum').textContent = document.getElementById('poNum').value; const d = document.getElementById('poDate').value; if (d) { const p = d.split('-'); document.getElementById('p-poDate').textContent = `${p[2]}/${p[1]}/${p[0]}` }
+            document.getElementById('p-supplier').textContent = document.getElementById('supplier').value; const t = parseFloat(document.getElementById('poTotal').value) || 0; const v = t * 21 / 121; const fmt = n => '€' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); document.getElementById('p-poTotal').textContent = fmt(t); document.getElementById('p-poVat').textContent = fmt(v); const dd = document.getElementById('delDate').value; if (dd) { const p = dd.split('-'); const ms = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; document.getElementById('p-delDate').textContent = parseInt(p[2]) + ' ' + ms[parseInt(p[1]) - 1] + ' ' + p[0] }
+        }
+        document.querySelectorAll('.editor input,.editor textarea').forEach(el => el.addEventListener('input', updatePreview)); updatePreview();
+    </script>
+</body>
+
+</html>

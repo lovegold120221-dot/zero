@@ -1,0 +1,62 @@
+name: Android APK Distribution
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-distribute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Web App
+        run: npm run build
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_EBURON_AI_BEATRICE }}'
+          channelId: live
+          projectId: eburon-ai-beatrice
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli
+
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > release.keystore
+
+      - name: Build APK with Bubblewrap
+        run: |
+          bubblewrap build --signed \
+            --keystorepath ./release.keystore \
+            --keystorepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            --keyalias beatrice \
+            --keypass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}"
+
+      - name: Upload to Firebase App Distribution
+        uses: w9jds/firebase-action@master
+        with:
+          args: appdistribution:distribute app-release-signed.apk --app "${{ secrets.FIREBASE_ANDROID_APP_ID }}" --groups "testers"
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}

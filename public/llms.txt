@@ -1,0 +1,10 @@
+# Beatrice - Authenticated Voice Intelligence
+
+Beatrice is a powerful, context-aware AI voice assistant that integrates Google Services (Gmail, Calendar, Tasks, Drive, YouTube), WhatsApp, real-time audio chat, and secure Firestore-backed state synchronization.
+
+## Features
+- Real-time voice interaction with high-fidelity low-latency audio.
+- Secure user authentication with Firebase Auth.
+- Deep integration with Google Workspace.
+- Custom WhatsApp messaging and permissions management.
+- Dynamic document generation and web search.

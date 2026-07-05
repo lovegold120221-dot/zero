@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Minutes - Template</title>
+    <style>
+        :root {
+            --primary: #1a365d;
+            --accent: #2b6cb0;
+            --bg: #f7fafc;
+            --text: #1a202c;
+            --muted: #718096;
+            --border: #e2e8f0;
+            --font-serif: 'Georgia', serif;
+            --font-sans: 'Inter', -apple-system, sans-serif
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden
+        }
+
+        .editor {
+            width: 340px;
+            background: #fff;
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex-shrink: 0
+        }
+
+        .editor h2 {
+            font-size: 1.1rem;
+            color: var(--primary);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 8px
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px
+        }
+
+        .form-group label {
+            font-size: .75rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .05em
+        }
+
+        .form-group input,
+        .form-group textarea {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: .9rem;
+            outline: none;
+            transition: border-color .2s;
+            font-family: var(--font-sans)
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 60px
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: var(--accent)
+        }
+
+        .btn-print {
+            background: var(--primary);
+            color: #fff;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: auto
+        }
+
+        .btn-print:hover {
+            background: #0f2440
+        }
+
+        .preview {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            background: #f1f5f9
+        }
+
+        .paper {
+            width: 800px;
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+            padding: 45px 60px;
+            font-family: var(--font-serif);
+            font-size: 10.5pt;
+            line-height: 1.6;
+            color: #111;
+            height: fit-content
+        }
+
+        .minutes-header {
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 15px
+        }
+
+        .minutes-header h1 {
+            font-size: 1.4rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--primary)
+        }
+
+        .minutes-header .meta {
+            font-family: var(--font-sans);
+            font-size: .85rem;
+            color: var(--muted);
+            margin-top: 4px
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 30px;
+            font-family: var(--font-sans);
+            font-size: .9rem;
+            margin-bottom: 20px;
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px
+        }
+
+        .info-grid .label {
+            font-size: .7rem;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-weight: 600
+        }
+
+        .agenda-item {
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 3px solid var(--accent)
+        }
+
+        .agenda-item h3 {
+            font-family: var(--font-sans);
+            font-size: .85rem;
+            font-weight: 700;
+            color: var(--primary)
+        }
+
+        .agenda-item p {
+            font-size: .95rem;
+            margin-top: 4px
+        }
+
+        .action-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-family: var(--font-sans);
+            font-size: .85rem
+        }
+
+        .action-table th {
+            background: var(--primary);
+            color: #fff;
+            padding: 8px 10px;
+            text-align: left;
+            font-size: .7rem;
+            text-transform: uppercase
+        }
+
+        .action-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .highlight {
+            background: rgba(43, 108, 176, .06);
+            border-bottom: 1px dashed var(--accent);
+            padding: 0 2px;
+            font-family: var(--font-sans)
+        }
+
+        .attendees-full {
+            grid-column: 1/-1
+        }
+
+        .section-header {
+            font-family: var(--font-sans);
+            font-size: .8rem;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--muted);
+            margin-bottom: 10px
+        }
+
+        .section-header-top {
+            margin-top: 20px;
+            margin-bottom: 8px
+        }
+
+        @media(max-width:900px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                overflow: visible
+            }
+
+            .editor {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border)
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr
+            }
+
+            .preview {
+                padding: 15px
+            }
+
+            .paper {
+                width: 100%;
+                padding: 25px 20px
+            }
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                display: block;
+                overflow: visible
+            }
+
+            .editor {
+                display: none !important
+            }
+
+            .preview {
+                background: #fff;
+                padding: 0;
+                overflow: visible;
+                display: block
+            }
+
+            .paper {
+                box-shadow: none;
+                width: 100%;
+                margin: 0;
+                padding: 40px 50px
+            }
+
+            .highlight {
+                border-bottom: none;
+                background: transparent
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="editor">
+        <h2>Meeting Minutes</h2>
+        <div class="form-group"><label>Meeting Title</label><input type="text" id="mtgTitle"
+                value="Weekly Strategy — Q3 Planning" title="Meeting title" placeholder="Enter meeting title"></div>
+        <div class="form-group"><label>Date</label><input type="date" id="mtgDate" value="2026-06-15"
+                title="Meeting date" placeholder="Select date"></div>
+        <div class="form-group"><label>Time</label><input type="text" id="mtgTime" value="10:00 — 11:30"
+                title="Meeting time" placeholder="Enter time range"></div>
+        <div class="form-group"><label>Location</label><input type="text" id="mtgLoc" value="Boardroom A / Zoom"
+                title="Meeting location" placeholder="Enter location"></div>
+        <div class="form-group"><label>Chairperson</label><input type="text" id="chair" value="Joe Lernout"
+                title="Chairperson name" placeholder="Enter chairperson"></div>
+        <div class="form-group"><label>Attendees</label><input type="text" id="attendees"
+                value="Alice, Bob, Claire, David, Elena" title="Meeting attendees" placeholder="Enter attendees"></div>
+        <div class="form-group"><label>Agenda Items</label><textarea id="agenda" rows="3" title="Agenda items"
+                placeholder="Enter agenda items">1. Q2 Performance Review\n2. Q3 Budget Allocation\n3. New Hire Approvals\n4. Client Escalation — TechCorp</textarea>
+        </div>
+        <div class="form-group"><label>Key Decisions</label><textarea id="decisions" rows="2" title="Key decisions"
+                placeholder="Enter key decisions">Budget increased by 15% for R&D; TechCorp account to receive dedicated support team</textarea>
+        </div>
+        <button class="btn-print" onclick="window.print()">Print / PDF</button>
+    </div>
+    <div class="preview">
+        <div class="paper">
+            <div class="minutes-header">
+                <h1 id="p-mtgTitle">Weekly Strategy — Q3 Planning</h1>
+                <div class="meta">Meeting Minutes</div>
+            </div>
+            <div class="info-grid">
+                <div>
+                    <div class="label">Date</div><span id="p-mtgDate">15 June 2026</span>
+                </div>
+                <div>
+                    <div class="label">Time</div><span id="p-mtgTime">10:00 — 11:30</span>
+                </div>
+                <div>
+                    <div class="label">Location</div><span id="p-mtgLoc">Boardroom A / Zoom</span>
+                </div>
+                <div>
+                    <div class="label">Chairperson</div><span id="p-chair">Joe Lernout</span>
+                </div>
+                <div class="attendees-full">
+                    <div class="label">Attendees</div><span id="p-attendees">Alice, Bob, Claire, David, Elena</span>
+                </div>
+            </div>
+            <h3 class="section-header">Agenda</h3>
+            <div id="p-agenda">
+                <div class="agenda-item">
+                    <h3>1. Q2 Performance Review</h3>
+                    <p>Reviewed departmental KPIs. Overall performance at 112% of target.</p>
+                </div>
+                <div class="agenda-item">
+                    <h3>2. Q3 Budget Allocation</h3>
+                    <p>Discussed resource distribution across teams.</p>
+                </div>
+                <div class="agenda-item">
+                    <h3>3. New Hire Approvals</h3>
+                    <p>Three headcount requests reviewed and approved.</p>
+                </div>
+                <div class="agenda-item">
+                    <h3>4. Client Escalation — TechCorp</h3>
+                    <p>Dedicated support team assigned. Follow-up meeting scheduled.</p>
+                </div>
+            </div>
+            <h3 class="section-header section-header-top">Key Decisions</h3>
+            <p id="p-decisions">Budget increased by 15% for R&D; TechCorp account to receive dedicated support team.</p>
+            <h3 class="section-header section-header-top">Action Items</h3>
+            <table class="action-table">
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Owner</th>
+                        <th>Deadline</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Finalise Q3 budget spreadsheet</td>
+                        <td>Finance</td>
+                        <td>18 June</td>
+                    </tr>
+                    <tr>
+                        <td>Send TechCorp proposal addendum</td>
+                        <td>Alice</td>
+                        <td>17 June</td>
+                    </tr>
+                    <tr>
+                        <td>Schedule follow-up strategy session</td>
+                        <td>Elena</td>
+                        <td>20 June</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        function updatePreview() {
+            document.getElementById('p-mtgTitle').textContent = document.getElementById('mtgTitle').value; const d = document.getElementById('mtgDate').value; if (d) { const p = d.split('-'); const ms = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; document.getElementById('p-mtgDate').textContent = parseInt(p[2]) + ' ' + ms[parseInt(p[1]) - 1] + ' ' + p[0] }
+            document.getElementById('p-mtgTime').textContent = document.getElementById('mtgTime').value; document.getElementById('p-mtgLoc').textContent = document.getElementById('mtgLoc').value; document.getElementById('p-chair').textContent = document.getElementById('chair').value; document.getElementById('p-attendees').textContent = document.getElementById('attendees').value; document.getElementById('p-decisions').textContent = document.getElementById('decisions').value
+        }
+        document.querySelectorAll('.editor input,.editor textarea').forEach(el => el.addEventListener('input', updatePreview)); updatePreview();
+    </script>
+</body>
+
+</html>

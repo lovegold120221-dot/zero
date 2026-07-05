@@ -1,0 +1,12 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Connecting: User taps mic
+    Connecting --> Connected: Session established
+    Connected --> Streaming: User speaks / AI responds
+    Connected --> ToolCalling: AI requests tool execution
+    ToolCalling --> Streaming: Tool result returned
+    Streaming --> Connected: Turn complete
+    Connected --> Idle: User stops / timeout
+    Idle --> PendingPermission: First tool use
+    PendingPermission --> Idle: User denies
+    PendingPermission --> Connected: User approves

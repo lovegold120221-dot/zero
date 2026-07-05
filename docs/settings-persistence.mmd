@@ -1,0 +1,20 @@
+flowchart TB
+    subgraph Frontend["Frontend State"]
+        SN["settings state\n(personaName, selectedVoice,\ncontextSize, userTitle, authLanguage)"]
+    end
+
+    subgraph Storage["Storage Targets"]
+        SUP["Supabase user_settings\nUPSERT on conflict: user_id"]
+        LS2["localStorage\nbeatrice_userTitle\nbeatrice_language"]
+    end
+
+    subgraph Load["On Mount"]
+        SUP2["Supabase .single()"]
+        LS3["localStorage fallback"]
+    end
+
+    SN -->|Save button| SUP
+    SN -->|Save button| LS2
+    SUP -.->|error| LS2
+    SUP2 --> SN
+    LS3 --> SN

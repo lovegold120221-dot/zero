@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.git/
+.env*
+!.env.example
+!.env.whatsapp.example
+client.json
+.baileys_auth/
+scratch/
+.DS_Store

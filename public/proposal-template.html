@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Proposal - Template</title>
+    <style>
+        :root {
+            --primary: #0f2a4a;
+            --accent: #2563eb;
+            --gold: #d4a84b;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --font-serif: 'Georgia', serif;
+            --font-sans: 'Inter', -apple-system, sans-serif
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden
+        }
+
+        .editor {
+            width: 340px;
+            background: #fff;
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex-shrink: 0
+        }
+
+        .editor h2 {
+            font-size: 1.1rem;
+            color: var(--primary);
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 8px
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px
+        }
+
+        .form-group label {
+            font-size: .75rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .05em
+        }
+
+        .form-group input,
+        .form-group textarea {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: .9rem;
+            outline: none;
+            transition: border-color .2s;
+            font-family: var(--font-sans)
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 60px
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: var(--accent)
+        }
+
+        .btn-print {
+            background: var(--primary);
+            color: #fff;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: auto
+        }
+
+        .btn-print:hover {
+            background: #081a2e
+        }
+
+        .preview {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            background: #f1f5f9
+        }
+
+        .paper {
+            width: 800px;
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+            padding: 50px 70px;
+            font-family: var(--font-serif);
+            font-size: 10.5pt;
+            line-height: 1.65;
+            color: #111;
+            height: fit-content
+        }
+
+        .proposal-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid var(--gold);
+            padding-bottom: 20px
+        }
+
+        .proposal-header h1 {
+            font-size: 1.6rem;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--primary)
+        }
+
+        .proposal-header .sub {
+            font-family: var(--font-sans);
+            color: var(--muted);
+            font-size: .85rem;
+            margin-top: 6px
+        }
+
+        .proposal-meta {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--font-sans);
+            font-size: .85rem;
+            color: var(--muted);
+            margin-bottom: 25px
+        }
+
+        .section-title {
+            font-family: var(--font-sans);
+            font-size: .85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--primary);
+            border-bottom: 1px solid var(--gold);
+            padding-bottom: 4px;
+            margin-top: 24px;
+            margin-bottom: 10px
+        }
+
+        .pricing-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-family: var(--font-sans);
+            font-size: .9rem
+        }
+
+        .pricing-table th {
+            background: var(--primary);
+            color: #fff;
+            padding: 8px 12px;
+            text-align: left;
+            font-size: .75rem;
+            text-transform: uppercase
+        }
+
+        .pricing-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .highlight {
+            background: rgba(37, 99, 235, .06);
+            border-bottom: 1px dashed var(--accent);
+            padding: 0 2px;
+            font-family: var(--font-sans)
+        }
+
+        .total-row {
+            font-weight: 700;
+            background: #f8fafc
+        }
+
+        @media(max-width:900px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                overflow: visible
+            }
+
+            .editor {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border)
+            }
+
+            .preview {
+                padding: 15px
+            }
+
+            .paper {
+                width: 100%;
+                padding: 25px 20px
+            }
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                display: block;
+                overflow: visible
+            }
+
+            .editor {
+                display: none !important
+            }
+
+            .preview {
+                background: #fff;
+                padding: 0;
+                overflow: visible;
+                display: block
+            }
+
+            .paper {
+                box-shadow: none;
+                width: 100%;
+                margin: 0;
+                padding: 40px 50px
+            }
+
+            .highlight {
+                border-bottom: none;
+                background: transparent
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="editor">
+        <h2>Proposal Generator</h2>
+        <div class="form-group"><label>Proposal Title</label><input type="text" id="propTitle"
+                value="Digital Transformation Partnership" title="Proposal title" placeholder="Enter proposal title">
+        </div>
+        <div class="form-group"><label>Client Name</label><input type="text" id="clientName" value="EuroCorp Industries"
+                title="Client name" placeholder="Enter client name"></div>
+        <div class="form-group"><label>Prepared By</label><input type="text" id="prepBy" value="Ariolas BV"
+                title="Prepared by" placeholder="Enter preparer"></div>
+        <div class="form-group"><label>Date</label><input type="date" id="propDate" value="2026-06-15"
+                title="Proposal date" placeholder="Select date"></div>
+        <div class="form-group"><label>Executive Summary</label><textarea id="execSummary" rows="3"
+                title="Executive summary"
+                placeholder="Enter executive summary">This proposal outlines a comprehensive digital transformation strategy designed to modernise EuroCorp's legacy infrastructure, reduce operational costs by 30%, and accelerate time-to-market for new digital products.</textarea>
+        </div>
+        <div class="form-group"><label>Services / Deliverables</label><textarea id="services" rows="2"
+                title="Services and deliverables"
+                placeholder="Enter services">Cloud Infrastructure Migration, AI-Powered Analytics Platform, Staff Training Programme</textarea>
+        </div>
+        <div class="form-group"><label>Budget (€)</label><input type="number" id="budget" value="175000"
+                title="Budget amount" placeholder="Enter budget"></div>
+        <button class="btn-print" onclick="window.print()">Print / PDF</button>
+    </div>
+    <div class="preview">
+        <div class="paper">
+            <div class="proposal-header">
+                <h1><span id="p-propTitle">Digital Transformation Partnership</span></h1>
+                <div class="sub">Prepared exclusively for <span id="p-clientName">EuroCorp Industries</span></div>
+            </div>
+            <div class="proposal-meta">
+                <span><strong>Prepared by:</strong> <span id="p-prepBy">Ariolas BV</span></span>
+                <span><strong>Date:</strong> <span id="p-propDate">15 June 2026</span></span>
+                <span><strong>Ref:</strong> PROP-2026-008</span>
+            </div>
+            <div class="section-title">1. Executive Summary</div>
+            <p id="p-execSummary">This proposal outlines a comprehensive digital transformation strategy designed to
+                modernise EuroCorp's legacy infrastructure, reduce operational costs by 30%, and accelerate
+                time-to-market for new digital products.</p>
+            <div class="section-title">2. Scope of Services</div>
+            <p id="p-services">Cloud Infrastructure Migration, AI-Powered Analytics Platform, Staff Training Programme
+            </p>
+            <div class="section-title">3. Investment</div>
+            <table class="pricing-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Cloud Migration & Setup</td>
+                        <td id="p-cost1">€75,000</td>
+                    </tr>
+                    <tr>
+                        <td>AI Analytics Platform</td>
+                        <td id="p-cost2">€65,000</td>
+                    </tr>
+                    <tr>
+                        <td>Training & Onboarding</td>
+                        <td id="p-cost3">€35,000</td>
+                    </tr>
+                    <tr class="total-row">
+                        <td>Total Investment</td>
+                        <td id="p-budget">€175,000</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="section-title">4. Timeline</div>
+            <p>Project commencement: <span id="p-propDate2">15 June 2026</span>. Estimated completion within 12 weeks
+                from start date, subject to mutually agreed milestones.</p>
+            <div class="section-title">5. Terms</div>
+            <p>This proposal is valid for 30 days from the date above. Payment terms: 40% upon acceptance, 30% at
+                midpoint milestone, 30% upon final delivery.</p>
+        </div>
+    </div>
+    <script>
+        function updatePreview() {
+            document.getElementById('p-propTitle').textContent = document.getElementById('propTitle').value; document.getElementById('p-clientName').textContent = document.getElementById('clientName').value; document.getElementById('p-prepBy').textContent = document.getElementById('prepBy').value; const d = document.getElementById('propDate').value; if (d) { const p = d.split('-'); const ms = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; const f = parseInt(p[2]) + ' ' + ms[parseInt(p[1]) - 1] + ' ' + p[0]; document.getElementById('p-propDate').textContent = f; document.getElementById('p-propDate2').textContent = f }
+            document.getElementById('p-execSummary').textContent = document.getElementById('execSummary').value; document.getElementById('p-services').textContent = document.getElementById('services').value; const b = parseFloat(document.getElementById('budget').value) || 0; const fmt = n => '€' + n.toLocaleString('en-US', { minimumFractionDigits: 2 }); document.getElementById('p-budget').textContent = fmt(b); document.getElementById('p-cost1').textContent = fmt(Math.round(b * 0.43)); document.getElementById('p-cost2').textContent = fmt(Math.round(b * 0.37)); document.getElementById('p-cost3').textContent = fmt(Math.round(b * 0.2))
+        }
+        document.querySelectorAll('.editor input,.editor textarea').forEach(el => el.addEventListener('input', updatePreview)); updatePreview();
+    </script>
+</body>
+
+</html>

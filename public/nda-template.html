@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Non-Disclosure Agreement - Template</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #475569;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --font-serif: 'Georgia', serif;
+            --font-sans: 'Inter', -apple-system, sans-serif
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden
+        }
+
+        .editor {
+            width: 340px;
+            background: #fff;
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex-shrink: 0
+        }
+
+        .editor h2 {
+            font-size: 1.1rem;
+            color: var(--primary);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 8px
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px
+        }
+
+        .form-group label {
+            font-size: .75rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .05em
+        }
+
+        .form-group input,
+        .form-group textarea {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: .9rem;
+            outline: none;
+            transition: border-color .2s;
+            font-family: var(--font-sans)
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 50px
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: var(--accent)
+        }
+
+        .btn-print {
+            background: var(--primary);
+            color: #fff;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: auto
+        }
+
+        .btn-print:hover {
+            background: #020617
+        }
+
+        .preview {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            background: #f1f5f9
+        }
+
+        .paper {
+            width: 800px;
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+            padding: 50px 70px;
+            font-family: var(--font-serif);
+            font-size: 10pt;
+            line-height: 1.6;
+            color: #111;
+            height: fit-content
+        }
+
+        .nda-header {
+            text-align: center;
+            margin-bottom: 30px
+        }
+
+        .nda-header h1 {
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--primary)
+        }
+
+        .nda-header .sub {
+            font-family: var(--font-sans);
+            font-size: .8rem;
+            color: var(--muted)
+        }
+
+        .divider {
+            height: 2px;
+            background: #000;
+            margin: 15px 0 25px
+        }
+
+        .nda-parties {
+            margin-bottom: 20px;
+            font-size: 10.5pt
+        }
+
+        .nda-parties p {
+            margin-bottom: 8px
+        }
+
+        .article-title {
+            font-family: var(--font-sans);
+            font-size: .85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+            margin-top: 24px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 3px
+        }
+
+        .nda-sign {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+            gap: 30px
+        }
+
+        .nda-sign .sig-box {
+            width: 45%;
+            border-top: 1px solid #000;
+            padding-top: 12px;
+            font-family: var(--font-sans);
+            font-size: .8rem
+        }
+
+        .nda-sign .sig-box p {
+            margin-bottom: 3px
+        }
+
+        .highlight {
+            background: rgba(71, 85, 105, .06);
+            border-bottom: 1px dashed var(--accent);
+            padding: 0 2px;
+            font-family: var(--font-sans)
+        }
+
+        .party-spacing {
+            margin-top: 10px
+        }
+
+        .parties-collect {
+            margin-top: 8px
+        }
+
+        @media(max-width:900px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                overflow: visible
+            }
+
+            .editor {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border)
+            }
+
+            .preview {
+                padding: 15px
+            }
+
+            .paper {
+                width: 100%;
+                padding: 25px 20px
+            }
+
+            .nda-sign {
+                flex-direction: column;
+                gap: 30px
+            }
+
+            .nda-sign .sig-box {
+                width: 100%
+            }
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                display: block;
+                overflow: visible
+            }
+
+            .editor {
+                display: none !important
+            }
+
+            .preview {
+                background: #fff;
+                padding: 0;
+                overflow: visible;
+                display: block
+            }
+
+            .paper {
+                box-shadow: none;
+                width: 100%;
+                margin: 0;
+                padding: 40px 50px
+            }
+
+            .highlight {
+                border-bottom: none;
+                background: transparent
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="editor">
+        <h2>NDA Generator</h2>
+        <div class="form-group"><label>Disclosing Party</label><input type="text" id="partyA" value="Ariolas BV"
+                title="Disclosing party name" placeholder="Enter disclosing party"></div>
+        <div class="form-group"><label>Receiving Party</label><input type="text" id="partyB" value="TechCorp SA"
+                title="Receiving party name" placeholder="Enter receiving party"></div>
+        <div class="form-group"><label>Effective Date</label><input type="date" id="ndaDate" value="2026-06-15"
+                title="Effective date" placeholder="Select date"></div>
+        <div class="form-group"><label>Purpose</label><textarea id="ndaPurpose" rows="2" title="Purpose of agreement"
+                placeholder="Enter purpose">Evaluation of potential strategic partnership and technology integration between the parties.</textarea>
+        </div>
+        <div class="form-group"><label>Term (months)</label><input type="number" id="ndaTerm" value="24"
+                title="Term in months" placeholder="Enter term"></div>
+        <div class="form-group"><label>Jurisdiction</label><input type="text" id="ndaJuris" value="Brussels, Belgium"
+                title="Jurisdiction" placeholder="Enter jurisdiction"></div>
+        <button class="btn-print" onclick="window.print()">Print / PDF</button>
+    </div>
+    <div class="preview">
+        <div class="paper">
+            <div class="nda-header">
+                <h1>Non-Disclosure Agreement</h1>
+                <div class="sub">Mutual Confidentiality</div>
+            </div>
+            <div class="divider"></div>
+            <div class="nda-parties">
+                <p>This Non-Disclosure Agreement (the "Agreement") is entered into as of <span id="p-ndaDate">15 June
+                        2026</span> by and between:</p>
+                <p class="party-spacing"><strong>Disclosing Party:</strong> <span id="p-partyA">Ariolas BV</span>, a
+                    company organised under the laws of Belgium, with registered office at Rue de la Loi 16, 1000
+                    Brussels (the "Disclosing Party");</p>
+                <p><strong>Receiving Party:</strong> <span id="p-partyB">TechCorp SA</span>, a company organised under
+                    the laws of Belgium, with registered office at Avenue des Arts 58, 1000 Brussels (the "Receiving
+                    Party").</p>
+                <p class="parties-collect">Collectively referred to as the "Parties".</p>
+            </div>
+            <div class="article-title">1. Purpose</div>
+            <p id="p-ndaPurpose">Evaluation of potential strategic partnership and technology integration between the
+                parties.</p>
+            <div class="article-title">2. Confidential Information</div>
+            <p>"Confidential Information" means any proprietary information, technical data, trade secrets, know-how,
+                business plans, financial data, customer lists, and any other non-public information disclosed by one
+                Party to the other, whether orally, in writing, or in any other form.</p>
+            <div class="article-title">3. Obligations</div>
+            <p>The Receiving Party agrees to: (a) hold all Confidential Information in strict confidence; (b) not
+                disclose it to any third party without prior written consent; (c) use it solely for the Purpose; and (d)
+                return or destroy all Confidential Information upon request.</p>
+            <div class="article-title">4. Term</div>
+            <p>This Agreement shall remain in effect for <span id="p-ndaTerm">24</span> months from the Effective Date.
+                The confidentiality obligations shall survive termination of this Agreement indefinitely for trade
+                secrets and for five years for all other Confidential Information.</p>
+            <div class="article-title">5. Governing Law</div>
+            <p>This Agreement shall be governed by the laws of Belgium. Any disputes shall be subject to the exclusive
+                jurisdiction of the courts of <span id="p-ndaJuris">Brussels, Belgium</span>.</p>
+            <div class="nda-sign">
+                <div class="sig-box">
+                    <p><strong>For: <span id="p-partyA2">Ariolas BV</span></strong></p>
+                    <p>Signature: ________________________</p>
+                    <p>Name: ________________________</p>
+                    <p>Title: ________________________</p>
+                    <p>Date: ________________________</p>
+                </div>
+                <div class="sig-box">
+                    <p><strong>For: <span id="p-partyB2">TechCorp SA</span></strong></p>
+                    <p>Signature: ________________________</p>
+                    <p>Name: ________________________</p>
+                    <p>Title: ________________________</p>
+                    <p>Date: ________________________</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function updatePreview() {
+            document.getElementById('p-partyA').textContent = document.getElementById('partyA').value; document.getElementById('p-partyA2').textContent = document.getElementById('partyA').value; document.getElementById('p-partyB').textContent = document.getElementById('partyB').value; document.getElementById('p-partyB2').textContent = document.getElementById('partyB').value; const d = document.getElementById('ndaDate').value; if (d) { const p = d.split('-'); const ms = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; document.getElementById('p-ndaDate').textContent = parseInt(p[2]) + ' ' + ms[parseInt(p[1]) - 1] + ' ' + p[0] }
+            document.getElementById('p-ndaPurpose').textContent = document.getElementById('ndaPurpose').value; document.getElementById('p-ndaTerm').textContent = document.getElementById('ndaTerm').value; document.getElementById('p-ndaJuris').textContent = document.getElementById('ndaJuris').value
+        }
+        document.querySelectorAll('.editor input,.editor textarea').forEach(el => el.addEventListener('input', updatePreview)); updatePreview();
+    </script>
+</body>
+
+</html>

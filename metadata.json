@@ -1,0 +1,9 @@
+{
+  "name": "Remix: Beatrice Voice Agent",
+  "description": "A high-performance AI voice agent with native speech patterns and integrated Google Services background processing.",
+  "requestFramePermissions": [
+    "microphone",
+    "geolocation",
+    "camera"
+  ]
+}

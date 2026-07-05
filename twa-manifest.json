@@ -1,0 +1,42 @@
+{
+  "packageId": "ai.eburon.beatrice",
+  "host": "eburon-ai-beatrice.web.app",
+  "name": "Beatrice",
+  "launcherName": "Beatrice",
+  "description": "Premium Authenticated Voice Intelligence Assistant by Eburon AI.",
+  "startUrl": "/",
+  "iconUrl": "https://eburon-ai-beatrice.web.app/icon-eburon.svg",
+  "maskableIconUrl": "https://eburon-ai-beatrice.web.app/icon-eburon.svg",
+  "themeColor": "#050505",
+  "navigationColor": "#050505",
+  "backgroundColor": "#050505",
+  "display": "standalone",
+  "orientation": "portrait",
+  "appVersion": "1.0.0",
+  "appVersionCode": 1,
+  "signingKey": {
+    "path": "./release.keystore",
+    "alias": "beatrice"
+  },
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://eburon-ai-beatrice.web.app/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableNotifications": true,
+  "enableSiteSettingsShortcut": true,
+  "isLegacyApp": false,
+  "shortcuts": [],
+  "splashScreenFadeOutDuration": 300,
+  "shareTarget": {
+    "action": "/share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}

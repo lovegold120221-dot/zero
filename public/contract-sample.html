@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Executive Employment Agreement - CEO - Ariolas BV</title>
+    <style>
+        /* CSS Variables for Styling */
+        :root {
+            --primary-color: #0f172a;
+            --secondary-color: #3b82f6;
+            --text-dark: #1e293b;
+            --text-light: #64748b;
+            --bg-light: #f8fafc;
+            --border-color: #e2e8f0;
+            --font-serif: 'Georgia', serif;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Layout Structure */
+        .editor-panel {
+            width: 380px;
+            background-color: #ffffff;
+            border-right: 1px solid var(--border-color);
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        .preview-panel {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            background-color: #f1f5f9;
+        }
+
+        /* Form Controls */
+        h2 {
+            font-size: 1.25rem;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        input,
+        select {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+        }
+
+        input:focus {
+            border-color: var(--secondary-color);
+        }
+
+        /* Signature Pad */
+        .signature-container {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: #fafafa;
+            position: relative;
+            margin-top: 5px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100px;
+            cursor: crosshair;
+        }
+
+        .canvas-controls {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 10px;
+            background: #f1f5f9;
+            border-top: 1px solid var(--border-color);
+            border-bottom-left-radius: 6px;
+            border-bottom-right-radius: 6px;
+        }
+
+        .btn-small {
+            background: none;
+            border: none;
+            color: var(--secondary-color);
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn-print {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: auto;
+            transition: background-color 0.2s;
+            text-align: center;
+        }
+
+        .btn-print:hover {
+            background-color: #020617;
+        }
+
+        /* Contract Document Styling (A4 Look) */
+        .paper {
+            width: 800px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 60px 80px;
+            font-family: var(--font-serif);
+            font-size: 10.5pt;
+            line-height: 1.6;
+            color: #111111;
+            position: relative;
+            height: fit-content;
+        }
+
+        .contract-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .contract-header h1 {
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+            color: #000;
+        }
+
+        .contract-header .subtitle {
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .divider {
+            height: 2px;
+            background-color: #000;
+            margin: 20px 0 40px 0;
+        }
+
+        .parties-section {
+            margin-bottom: 30px;
+        }
+
+        .party-block {
+            margin-bottom: 15px;
+        }
+
+        .party-title {
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .article-title {
+            font-family: var(--font-sans);
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 30px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .signature-block-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 60px;
+            page-break-inside: avoid;
+            gap: 20px;
+        }
+
+        .signature-box {
+            width: 45%;
+            border-top: 1px solid #000;
+            padding-top: 10px;
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+        }
+
+        .signature-box p {
+            margin-bottom: 5px;
+        }
+
+        .sig-space {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sig-space img {
+            max-height: 70px;
+            max-width: 100%;
+        }
+
+        /* Dynamic highlights inside contract preview */
+        .highlight {
+            font-family: var(--font-sans);
+            font-weight: 600;
+            border-bottom: 1px dashed var(--secondary-color);
+            background-color: rgba(59, 130, 246, 0.05);
+            padding: 0 2px;
+        }
+
+        /* MOBILE RESPONSIVE MEDIA QUERIES */
+        @media (max-width: 900px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                overflow: visible;
+            }
+
+            .editor-panel {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            }
+
+            .preview-panel {
+                padding: 15px;
+                width: 100%;
+                background-color: #e2e8f0;
+                overflow: visible;
+            }
+
+            .paper {
+                width: 100%;
+                max-width: 100%;
+                padding: 30px 20px;
+                box-shadow: none;
+            }
+
+            .contract-header h1 {
+                font-size: 1.4rem;
+            }
+
+            .signature-block-container {
+                flex-direction: column;
+                gap: 40px;
+            }
+
+            .signature-box {
+                width: 100%;
+            }
+        }
+
+        /* Print Override */
+        @media print {
+            body {
+                background: white;
+                overflow: visible;
+                display: block;
+            }
+
+            .editor-panel {
+                display: none !important;
+            }
+
+            .preview-panel {
+                background: white;
+                padding: 0;
+                overflow: visible;
+                display: block;
+            }
+
+            .paper {
+                box-shadow: none;
+                width: 100%;
+                margin: 0;
+                padding: 40px 50px;
+            }
+
+            .highlight {
+                border-bottom: none;
+                background-color: transparent;
+                font-family: var(--font-serif);
+                font-weight: normal;
+            }
+        }
+
+        .jurisdiction-subtitle {
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .paragraph-spacing {
+            margin-top: 8px;
+        }
+
+        .benefits-list {
+            margin-left: 25px;
+            margin-top: 5px;
+        }
+
+        .sig-placeholder {
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        .sig-image {
+            display: none;
+        }
+
+        .sig-image.is-visible {
+            display: block;
+        }
+
+        .sig-placeholder.is-hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LEFT PANEL: Dynamic Contract Editor -->
+    <div class="editor-panel">
+        <h2>Contract Generator</h2>
+
+        <div class="form-group">
+            <label for="companyName">Company Name</label>
+            <input type="text" id="companyName" value="Ariolas BV">
+        </div>
+
+        <div class="form-group">
+            <label for="companyAddress">Belgian Registered Office</label>
+            <input type="text" id="companyAddress" value="Rue de la Loi 16, 1000 Brussels">
+        </div>
+
+        <div class="form-group">
+            <label for="enterpriseNum">Crossroads Bank (KBO/BCE)</label>
+            <input type="text" id="enterpriseNum" value="0799.123.456">
+        </div>
+
+        <div class="form-group">
+            <label for="ceoName">CEO Full Name</label>
+            <input type="text" id="ceoName" value="Joe Lernout">
+        </div>
+
+        <div class="form-group">
+            <label for="ceoAddress">CEO Address</label>
+            <input type="text" id="ceoAddress" value="Avenue Louise 250, 1050 Brussels, Belgium">
+        </div>
+
+        <div class="form-group">
+            <label for="startDate">Effective Date</label>
+            <input type="date" id="startDate" value="2026-06-01">
+        </div>
+
+        <div class="form-group">
+            <label for="salary">Gross Monthly Salary (€)</label>
+            <input type="number" id="salary" value="18500">
+        </div>
+
+        <div class="form-group">
+            <label for="noticePeriod">Notice Period (Months)</label>
+            <input type="number" id="noticePeriod" value="12">
+        </div>
+
+        <div class="form-group">
+            <label>Draw CEO Signature</label>
+            <div class="signature-container">
+                <canvas id="sigCanvas"></canvas>
+                <div class="canvas-controls">
+                    <button type="button" class="btn-small" onclick="clearSig()">Clear</button>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-print" onclick="window.print()">Print Contract / PDF</button>
+    </div>
+
+    <!-- RIGHT PANEL: Contract Preview -->
+    <div class="preview-panel">
+        <div class="paper" id="contractContent">
+
+            <div class="contract-header">
+                <h1>Executive Employment Agreement</h1>
+                <div class="subtitle">Chief Executive Officer (CEO) Grade</div>
+                <div class="jurisdiction-subtitle">Belgium Jurisdiction</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="parties-section">
+                <p>This Executive Employment Agreement (the "Agreement") is entered into and made effective as of <span
+                        id="p-startDate-top" class="highlight">01/06/2026</span>, by and between:</p>
+                <br>
+                <div class="party-block">
+                    <p class="party-title">1. The Employer:</p>
+                    <p>
+                        <span id="p-companyName-1" class="highlight">Ariolas BV</span>, a company incorporated and
+                        organized under the laws of Belgium, with its registered office situated at <span
+                            id="p-companyAddress" class="highlight">Rue de la Loi 16, 1000 Brussels</span>, registered
+                        with the Crossroads Bank for Enterprises (KBO/BCE) under number <span id="p-enterpriseNum"
+                            class="highlight">0799.123.456</span>, and represented herein by its Board of Directors (the
+                        "Company").
+                    </p>
+                </div>
+
+                <div class="party-block">
+                    <p class="party-title">2. The Executive:</p>
+                    <p>
+                        <span id="p-ceoName-1" class="highlight">Joe Lernout</span>, residing at <span id="p-ceoAddress"
+                            class="highlight">Avenue Louise 250, 1050 Brussels, Belgium</span> (the "Executive").
+                    </p>
+                </div>
+            </div>
+
+            <p>The Company and the Executive are hereinafter collectively referred to as the "Parties" and individually
+                as a "Party".</p>
+
+            <div class="article-title">Article 1: Position and Duties</div>
+            <p>
+                The Executive is employed in the position of <strong>Chief Executive Officer (CEO)</strong>. In this
+                capacity, the Executive shall report directly to the Board of Directors of the Company and shall have
+                the duties, responsibilities, and authority standard for a Chief Executive Officer under Belgian
+                corporate law. The Executive agrees to devote the whole of their professional time, attention, and
+                energies to the performance of these duties.
+            </p>
+
+            <div class="article-title">Article 2: Term and Commencement</div>
+            <p>
+                This Agreement is concluded for an indefinite duration. The Executive's employment under this Agreement
+                shall commence on <span id="p-startDate-body" class="highlight">01/06/2026</span> (the "Commencement
+                Date").
+            </p>
+
+            <div class="article-title">Article 3: Place of Work & Exempt Status</div>
+            <p>
+                The Executive's primary place of work will be the Company's registered office, currently located in
+                Brussels. However, the nature of the duties requires regular travel within Belgium and internationally.
+            </p>
+            <p class="paragraph-spacing">
+                The Parties acknowledge that the Executive qualifies as "person invested with a leading position or a
+                position of trust" (*personne investie d'un poste de direction ou de confiance / personen bekleed met
+                een leidinggevende functie of een vertrouwenspost*) within the meaning of the Belgian Act of 16 March
+                1971 on employment. Consequently, statutory limitations on working hours and corresponding allowances do
+                not apply to this employment.
+            </p>
+
+            <div class="article-title">Article 4: Remuneration and Benefits</div>
+            <p>
+                As consideration for the performance of their duties, the Executive shall receive:
+            </p>
+            <ul class="benefits-list">
+                <li><strong>Base Salary:</strong> A gross monthly base salary of <span id="p-salary"
+                        class="highlight">€18,500</span>, payable in accordance with the standard payroll practices in
+                    Belgium (including 13.92-month structural standards if applicable).</li>
+                <li><strong>Variable Compensation:</strong> An annual performance bonus of up to 40% of the annual base
+                    salary, subject to targets and KPIs determined exclusively by the Board of Directors.</li>
+                <li><strong>Executive Benefits:</strong> A premium company vehicle, hospitalization insurance, group
+                    pension plan, representation allowance, and modern mobile/computational equipment in accordance with
+                    company policies.</li>
+            </ul>
+
+            <div class="article-title">Article 5: Confidentiality</div>
+            <p>
+                The Executive acknowledges that during their employment, they will have access to highly confidential
+                and proprietary information. The Executive agrees, both during the term of this Agreement and
+                indefinitely thereafter, to maintain strict confidentiality regarding all such information and not to
+                disclose it to any third party without express written permission.
+            </p>
+
+            <div class="article-title">Article 6: Non-Compete Covenant</div>
+            <p>
+                In accordance with Article 86 of the Belgian Act of 3 July 1978 on employment contracts, the Executive
+                agrees that upon termination of this Agreement for any reason, they shall not engage in any competitive
+                enterprise, directly or indirectly, for a period of twelve (12) months. This restriction applies
+                geographically to the territory of Belgium. In consideration of this non-compete obligation, the Company
+                shall pay the Executive a monthly non-compete indemnity equal to fifty percent (50%) of the gross
+                monthly salary for the duration of this covenant, unless the Company waives the non-compete covenant
+                within fifteen (15) days of termination.
+            </p>
+
+            <div class="article-title">Article 7: Termination</div>
+            <p>
+                Either party may terminate this Agreement by giving a written notice of termination. The length of the
+                notice period shall be <span id="p-noticePeriod" class="highlight">12</span> months. The notice shall
+                start in accordance with the rules laid down by Belgian statutory employment law. The Company reserves
+                the right to terminate this contract immediately for serious cause (*dringende reden / motif grave*)
+                without notice or compensation in lieu of notice.
+            </p>
+
+            <div class="article-title">Article 8: Governing Law and Jurisdiction</div>
+            <p>
+                This Agreement is governed by, and shall be construed in accordance with, Belgian law. Any dispute
+                arising out of or in connection with this Agreement that cannot be resolved amicably shall be submitted
+                to the exclusive jurisdiction of the Labor Courts (*Tribunal du travail / Arbeidsrechtbank*) of
+                Brussels, Belgium.
+            </p>
+
+            <!-- Signature Section -->
+            <div class="signature-block-container">
+                <div class="signature-box">
+                    <p>For and on behalf of <strong><span id="p-companyName-sig">Ariolas BV</span></strong></p>
+                    <div class="sig-space">
+                        <em class="sig-placeholder">[Board representative signature]</em>
+                    </div>
+                    <p>Name: Representative of the Board</p>
+                    <p>Title: Chairperson of the Board</p>
+                    <p>Date: ________________________</p>
+                </div>
+
+                <div class="signature-box">
+                    <p>The Executive</p>
+                    <div class="sig-space">
+                        <img id="sigImage" class="sig-image" src="" alt="" />
+                        <span id="sigPlaceholder" class="sig-placeholder">[Sign in editor panel]</span>
+                    </div>
+                    <p>Name: <strong><span id="p-ceoName-sig">Joe Lernout</span></strong></p>
+                    <p>Title: Chief Executive Officer</p>
+                    <p>Date: ________________________</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT: Dynamic Data Binding & Signature Pad -->
+    <script>
+        // Data binding inputs to preview placeholders
+        const inputs = {
+            companyName: ['p-companyName-1', 'p-companyName-sig'],
+            companyAddress: ['p-companyAddress'],
+            enterpriseNum: ['p-enterpriseNum'],
+            ceoName: ['p-ceoName-1', 'p-ceoName-sig'],
+            ceoAddress: ['p-ceoAddress'],
+            noticePeriod: ['p-noticePeriod']
+        };
+
+        function updateTexts() {
+            // Standard Text Fields
+            for (const [key, elementIds] of Object.entries(inputs)) {
+                const value = document.getElementById(key).value;
+                elementIds.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.innerText = value;
+                });
+            }
+
+            // Currency formatting for Salary
+            const salaryVal = parseFloat(document.getElementById('salary').value) || 0;
+            document.getElementById('p-salary').innerText = `€${salaryVal.toLocaleString('en-US')}`;
+
+            // Date Formatting (DD/MM/YYYY)
+            const dateVal = document.getElementById('startDate').value;
+            if (dateVal) {
+                const dateParts = dateVal.split('-');
+                if (dateParts.length === 3) {
+                    const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                    document.getElementById('p-startDate-top').innerText = formattedDate;
+                    document.getElementById('p-startDate-body').innerText = formattedDate;
+                }
+            }
+        }
+
+        // Attach event listeners to update in real-time
+        Object.keys(inputs).forEach(key => {
+            document.getElementById(key).addEventListener('input', updateTexts);
+        });
+        document.getElementById('salary').addEventListener('input', updateTexts);
+        document.getElementById('startDate').addEventListener('input', updateTexts);
+
+        // Run updates once on load
+        updateTexts();
+
+        // CANVAS SIGNATURE CONTROLLER
+        const canvas = document.getElementById('sigCanvas');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+
+        // Resize canvas to match box
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = 100;
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#1e3a8a'; // Executive blue color
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function getMousePos(canvasDom, touchOrMouseEvent) {
+            const rect = canvasDom.getBoundingClientRect();
+            if (touchOrMouseEvent.touches && touchOrMouseEvent.touches.length > 0) {
+                return {
+                    x: touchOrMouseEvent.touches[0].clientX - rect.left,
+                    y: touchOrMouseEvent.touches[0].clientY - rect.top
+                };
+            }
+            return {
+                x: touchOrMouseEvent.clientX - rect.left,
+                y: touchOrMouseEvent.clientY - rect.top
+            };
+        }
+
+        function startDrawing(e) {
+            drawing = true;
+            const pos = getMousePos(canvas, e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+
+        function draw(e) {
+            if (!drawing) return;
+            const pos = getMousePos(canvas, e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            e.preventDefault();
+        }
+
+        function endDrawing(e) {
+            if (!drawing) return;
+            drawing = false;
+            updateContractSignature();
+        }
+
+        // Mouse/Touch events
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        window.addEventListener('mouseup', endDrawing);
+
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        window.addEventListener('touchend', endDrawing);
+
+        function clearSig() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            document.getElementById('sigImage').classList.remove('is-visible');
+            document.getElementById('sigPlaceholder').classList.remove('is-hidden');
+        }
+
+        function updateContractSignature() {
+            // Output canvas content to the print image element
+            const dataUrl = canvas.toDataURL();
+            const sigImg = document.getElementById('sigImage');
+            const placeholder = document.getElementById('sigPlaceholder');
+
+            sigImg.src = dataUrl;
+            sigImg.classList.add('is-visible');
+            placeholder.classList.add('is-hidden');
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,613 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Eburon API",
+    "version": "1.0.0",
+    "description": "# Eburon AI API\n\nBackend for **Beatrice** — the AI-powered assistant with WhatsApp, Belgian business tools, web glance, website & document generation.\n\n## Ollama Integration\n[Ollama](https://ollama.ai) is available as a local LLM server. Use the **Ollama Server** base URL to interact with models directly.\nList available models: `ollama list`\n\n---"
+  },
+  "servers": [
+    {
+      "url": "https://whatsapp.eburon.ai",
+      "description": "Eburon Backend (production)"
+    },
+    {
+      "url": "http://localhost:4200",
+      "description": "Eburon Backend (local dev)"
+    },
+    {
+      "url": "http://localhost:11434",
+      "description": "Ollama Server (local)"
+    }
+  ],
+  "tags": [
+    { "name": "System", "description": "Health checks and system info" },
+    { "name": "Utility", "description": "Web search and utilities" },
+    { "name": "WhatsApp", "description": "WhatsApp messaging and session management" },
+    { "name": "Belgian", "description": "Belgian business & admin tools" },
+    { "name": "AI Generation", "description": "AI-powered website & document generation" },
+    { "name": "Ollama", "description": "Local LLM via Ollama (proxied through backend)" },
+    { "name": "Ollama Server", "description": "Direct Ollama API endpoints" }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health check",
+        "operationId": "healthCheck",
+        "tags": ["System"],
+        "responses": {
+          "200": {
+            "description": "Server is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" },
+                    "worker": { "type": "string", "example": "client-side" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/web/glance": {
+      "post": {
+        "summary": "Search the web via DuckDuckGo",
+        "operationId": "webGlance",
+        "tags": ["Utility"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["query"],
+                "properties": {
+                  "query": { "type": "string", "description": "Search query", "example": "Eburon AI Belgium" },
+                  "maxResults": { "type": "integer", "minimum": 1, "maximum": 5, "default": 3 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Search results with abstract and related topics" },
+          "400": { "description": "Invalid query" },
+          "502": { "description": "Upstream search failed" }
+        }
+      }
+    },
+    "/api/belgian/tool": {
+      "post": {
+        "summary": "Execute a Belgian business or admin tool",
+        "operationId": "belgianTool",
+        "tags": ["Belgian"],
+        "description": "Supported tools:\n- `belgian_company_lookup` — KBO/BECRIS company search\n- `belgian_vies_vat_validate` — EU VAT validation\n- `belgian_peppol_invoice` — Generate a PEPPOL invoice\n- `belgian_tax_calendar` — Tax deadlines\n- `belgian_registration_tax_calc` — Property registration tax\n- `belgian_itsme_navigator` — itsme® instructions\n- `belgian_language_bridge` — Language translation\n- `belgian_social_security_navigator` — Social security info\n- `belgian_labor_law_simplifier` — Labor law simplified\n- `belgian_mobility_planner` — Public transport routes",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["tool"],
+                "properties": {
+                  "tool": { "type": "string", "example": "belgian_company_lookup" },
+                  "params": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Tool execution result" },
+          "400": { "description": "Invalid tool or params" }
+        }
+      }
+    },
+    "/api/ollama/generate": {
+      "post": {
+        "summary": "Ollama streaming chat (proxied via Eburon backend)",
+        "operationId": "ollamaGenerate",
+        "tags": ["Ollama"],
+        "description": "Proxies a chat completion to the local Ollama server and streams the response as SSE (text/event-stream).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["model", "messages"],
+                "properties": {
+                  "model": { "type": "string", "example": "llama3.2", "description": "Ollama model name" },
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": { "type": "string", "enum": ["system", "user", "assistant"] },
+                        "content": { "type": "string" }
+                      }
+                    }
+                  },
+                  "options": { "type": "object", "description": "Ollama options (temperature, top_p, etc.)" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SSE stream of chat chunks",
+            "content": { "text/event-stream": { "schema": { "type": "string" } } }
+          }
+        }
+      }
+    },
+    "/api/whatsapp/pair": {
+      "post": {
+        "summary": "Pair a WhatsApp device",
+        "operationId": "whatsappPair",
+        "tags": ["WhatsApp"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId"],
+                "properties": {
+                  "userId": { "type": "string", "description": "User session ID (Firebase UID)" },
+                  "phoneNumber": { "type": "string", "description": "Phone number for pairing code method (optional, full international format)" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Pairing initiated — returns QR base64 or pairing code" }
+        }
+      }
+    },
+    "/api/whatsapp/status/{userId}": {
+      "get": {
+        "summary": "Get WhatsApp connection status",
+        "operationId": "whatsappStatus",
+        "tags": ["WhatsApp"],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current connection status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "enum": ["not_found", "connecting", "paired", "disconnected", "error"] },
+                    "phone": { "type": "string", "nullable": true },
+                    "qrCode": { "type": "string", "nullable": true, "description": "Base64-encoded QR image" },
+                    "pairingCode": { "type": "string", "nullable": true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/whatsapp/qr/{userId}": {
+      "get": {
+        "summary": "Get WhatsApp QR code as PNG image",
+        "operationId": "whatsappQr",
+        "tags": ["WhatsApp"],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "QR code PNG image",
+            "content": { "image/png": { "schema": { "type": "string", "format": "binary" } } }
+          },
+          "404": { "description": "QR not available yet" }
+        }
+      }
+    },
+    "/api/whatsapp/send": {
+      "post": {
+        "summary": "Send a WhatsApp text message",
+        "operationId": "whatsappSend",
+        "tags": ["WhatsApp"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId", "to", "text"],
+                "properties": {
+                  "userId": { "type": "string" },
+                  "to": { "type": "string", "description": "Recipient JID (digits@s.whatsapp.net) or phone number" },
+                  "text": { "type": "string", "description": "Message content" },
+                  "permissions": { "type": "object", "description": "Permission overrides (optional)" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Message sent successfully" },
+          "400": { "description": "Missing required fields or not paired" }
+        }
+      }
+    },
+    "/api/whatsapp/tool": {
+      "post": {
+        "summary": "Execute a WhatsApp action tool",
+        "operationId": "whatsappTool",
+        "tags": ["WhatsApp"],
+        "description": "Supported tools: `readChats`, `readGroupChats`, `getContacts`, `getGroups`, `sendMessage`, `sendGroupMessage`, `getChatHistory`, `getUnreadCount`",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId", "tool"],
+                "properties": {
+                  "userId": { "type": "string" },
+                  "tool": { "type": "string", "example": "readChats" },
+                  "params": { "type": "object", "description": "Tool-specific parameters" },
+                  "permissions": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Tool execution result" }
+        }
+      }
+    },
+    "/api/whatsapp/disconnect": {
+      "post": {
+        "summary": "Disconnect WhatsApp session",
+        "operationId": "whatsappDisconnect",
+        "tags": ["WhatsApp"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId"],
+                "properties": {
+                  "userId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Session disconnected" }
+        }
+      }
+    },
+    "/api/whatsapp/messages/{userId}": {
+      "get": {
+        "summary": "Get recent WhatsApp messages (Baileys only)",
+        "operationId": "whatsappMessages",
+        "tags": ["WhatsApp"],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20, "description": "Max messages to return" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recent messages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "messages": { "type": "array", "items": { "type": "object" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/whatsapp/webhook/{userId}": {
+      "get": {
+        "summary": "WhatsApp webhook verification (Meta Cloud API)",
+        "operationId": "whatsappWebhookVerify",
+        "tags": ["WhatsApp"],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "hub.mode", "in": "query", "schema": { "type": "string" } },
+          { "name": "hub.verify_token", "in": "query", "schema": { "type": "string" } },
+          { "name": "hub.challenge", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Challenge echoed back" },
+          "403": { "description": "Verification token mismatch" }
+        }
+      },
+      "post": {
+        "summary": "WhatsApp webhook event ingestion (Meta Cloud API)",
+        "operationId": "whatsappWebhookIngest",
+        "tags": ["WhatsApp"],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object" } } }
+        },
+        "responses": {
+          "200": { "description": "Webhook acknowledged" }
+        }
+      }
+    },
+    "/api/website/generate": {
+      "post": {
+        "summary": "Generate a website / landing page using Gemini AI",
+        "operationId": "websiteGenerate",
+        "tags": ["AI Generation"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId", "title", "prompt", "timestamp"],
+                "properties": {
+                  "userId": { "type": "string" },
+                  "title": { "type": "string", "description": "Website title" },
+                  "prompt": { "type": "string", "description": "Detailed description of the website to generate" },
+                  "timestamp": { "type": "string", "description": "Unique timestamp for the build slug" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Website generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "slug": { "type": "string", "example": "/site-build/user123/1700000000000" },
+                    "title": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/site-build/{userId}/{timestamp}": {
+      "get": {
+        "summary": "View a generated website",
+        "operationId": "siteBuildView",
+        "tags": ["AI Generation"],
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "timestamp", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Generated HTML page" },
+          "404": { "description": "Website not found or expired" }
+        }
+      }
+    },
+    "/api/docs/generate": {
+      "post": {
+        "summary": "Generate a document (contract, invoice, etc.) using Gemini AI",
+        "operationId": "docsGenerate",
+        "tags": ["AI Generation"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["userId", "title", "prompt", "templateKey"],
+                "properties": {
+                  "userId": { "type": "string" },
+                  "title": { "type": "string" },
+                  "prompt": { "type": "string", "description": "Detailed description of the document" },
+                  "templateKey": {
+                    "type": "string",
+                    "enum": ["contract", "invoice", "letter", "proposal", "minutes", "memo", "purchase-order", "receipt", "resignation", "nda", "certificate"]
+                  },
+                  "historyContext": { "type": "string", "description": "Conversation context for richer generation" },
+                  "language": { "type": "string", "default": "en" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Document generated" }
+        }
+      }
+    },
+    "/api/tags": {
+      "get": {
+        "summary": "List available Ollama models",
+        "operationId": "ollamaListModels",
+        "tags": ["Ollama Server"],
+        "servers": [{ "url": "http://localhost:11434" }, { "url": "http://<vps-ip>:11434" }],
+        "responses": {
+          "200": {
+            "description": "List of models",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "models": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": { "type": "string" },
+                          "modified_at": { "type": "string" },
+                          "size": { "type": "integer" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/generate": {
+      "post": {
+        "summary": "Generate a completion (non-streaming, Ollama)",
+        "operationId": "ollamaGenerateDirect",
+        "tags": ["Ollama Server"],
+        "servers": [{ "url": "http://localhost:11434" }, { "url": "http://<vps-ip>:11434" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["model", "prompt"],
+                "properties": {
+                  "model": { "type": "string", "example": "llama3.2" },
+                  "prompt": { "type": "string" },
+                  "stream": { "type": "boolean", "default": false },
+                  "options": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Generated response" }
+        }
+      }
+    },
+    "/api/chat": {
+      "post": {
+        "summary": "Chat completion (Ollama)",
+        "operationId": "ollamaChatDirect",
+        "tags": ["Ollama Server"],
+        "servers": [{ "url": "http://localhost:11434" }, { "url": "http://<vps-ip>:11434" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["model", "messages"],
+                "properties": {
+                  "model": { "type": "string", "example": "llama3.2" },
+                  "messages": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": { "type": "string", "enum": ["system", "user", "assistant", "tool"] },
+                        "content": { "type": "string" }
+                      }
+                    }
+                  },
+                  "stream": { "type": "boolean", "default": false },
+                  "options": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Chat response" }
+        }
+      }
+    },
+    "/api/embeddings": {
+      "post": {
+        "summary": "Generate embeddings (Ollama)",
+        "operationId": "ollamaEmbeddings",
+        "tags": ["Ollama Server"],
+        "servers": [{ "url": "http://localhost:11434" }, { "url": "http://<vps-ip>:11434" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["model", "prompt"],
+                "properties": {
+                  "model": { "type": "string", "example": "nomic-embed-text" },
+                  "prompt": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Embedding vector" }
+        }
+      }
+    },
+    "/api/ps": {
+      "get": {
+        "summary": "List running Ollama models",
+        "operationId": "ollamaPs",
+        "tags": ["Ollama Server"],
+        "servers": [{ "url": "http://localhost:11434" }, { "url": "http://<vps-ip>:11434" }],
+        "responses": {
+          "200": {
+            "description": "List of running models",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "models": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": { "type": "string" },
+                          "size": { "type": "integer" },
+                          "processor": { "type": "string" },
+                          "until": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Firebase ID token for authenticated endpoints"
+      }
+    }
+  }
+}

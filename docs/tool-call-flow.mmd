@@ -1,0 +1,23 @@
+sequenceDiagram
+    participant U as User
+    participant B as Beatrice (Gemini)
+    participant FE as App.tsx
+    participant GA as Google API
+
+    B->>FE: toolCall (e.g. list_calendar_events)
+    FE->>FE: Check _confirmed flag
+    alt First call (no _confirmed)
+        FE->>B: "Just checking — do you want me to ...?"
+        B->>U: Ask permission in conversation
+        U->>B: "Yes, go ahead"
+        B->>FE: toolCall with _confirmed: true
+        FE->>GA: Execute API call
+        GA->>FE: Response data
+        FE->>FE: Format as HTML page
+        FE->>B: Show formatted result
+    else Already confirmed
+        FE->>GA: Execute API call
+        GA->>FE: Response data
+        FE->>FE: Format as HTML page
+        FE->>B: Show formatted result
+    end

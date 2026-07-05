@@ -1,0 +1,67 @@
+flowchart TB
+    subgraph Client["Client Layer"]
+        FE["React 19 + TypeScript\nVite SPA"]
+        UI["motion + Tailwind CSS v4\nlucide-react icons"]
+    end
+
+    subgraph Auth["Authentication"]
+        FA["Firebase Auth\nGoogle Sign-In"]
+        FU["Firebase User\n(uid, displayName, email)"]
+    end
+
+    subgraph AI["AI Layer"]
+        GL["Gemini Live API\ngemini-3.1-flash-live-preview\n@google/genai SDK"]
+        VP["VOICE_PERSONALITY_PROMPT\n~130 lines defining Beatrice"]
+    end
+
+    subgraph Audio["Audio Pipeline"]
+        AS["AudioStreamer\nTTS playback"]
+        AR["AudioRecorder\nMic capture"]
+        AB["ORB Animation\nBreath effect\nWaveform equalizer\nCloud particles"]
+    end
+
+    subgraph Tools["Tool Executors"]
+        GC["Google Calendar"]
+        GM["Gmail"]
+        GT["Google Tasks"]
+        GD["Google Drive"]
+        YT["YouTube"]
+        GLoc["Geolocation"]
+        Doc["Document Generator\n(single-file HTML)"]
+    end
+
+    subgraph Data["Data Layer"]
+        FS["Firestore\nMessages collection"]
+        SB["Supabase\nuser_settings\nknowledge_files\nStorage buckets"]
+        LS["localStorage\nFallback cache"]
+    end
+
+    subgraph UI_Components["UI Components"]
+        VPg["VideoPage\nCamera + Screen Share"]
+        CP["ComputerPage\nIframe preview + Downloads"]
+        KT["KaraokeTranscript\nWord-by-word animation"]
+        SP["Settings Panel\nVoice, Persona, Language"]
+        PP["ProfilePage\nAvatar, KB files, Domains"]
+    end
+
+    FA -->|signInWithPopup| FU
+    FU -->|session token| GL
+    FE -->|user.uid| FS
+    FE -->|user.uid| SB
+    FE -->|fallback| LS
+    GL -->|toolCall| Tools
+    Tools -->|ask-first| GC
+    Tools -->|ask-first| GM
+    Tools -->|ask-first| GT
+    Tools -->|ask-first| GD
+    GL -->|audioIn/Out| Audio
+    Audio -->|volumes| AB
+    VP -->|system instruction| GL
+    FE --> UI
+    UI --> VPg
+    UI --> CP
+    UI --> KT
+    FE --> SP
+    FE --> PP
+    PP --> SB
+    PP --> LS

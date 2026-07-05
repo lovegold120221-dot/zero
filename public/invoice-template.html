@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - Template</title>
+    <style>
+        :root {
+            --primary: #1e3a5f;
+            --accent: #2563eb;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --font-serif: 'Georgia', serif;
+            --font-sans: 'Inter', -apple-system, sans-serif
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden
+        }
+
+        .editor {
+            width: 340px;
+            background: #fff;
+            border-right: 1px solid var(--border);
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex-shrink: 0
+        }
+
+        .editor h2 {
+            font-size: 1.1rem;
+            color: var(--primary);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 8px
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px
+        }
+
+        .form-group label {
+            font-size: .75rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .05em
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: .9rem;
+            outline: none;
+            transition: border-color .2s
+        }
+
+        .form-group input:focus {
+            border-color: var(--accent)
+        }
+
+        .btn-print {
+            background: var(--primary);
+            color: #fff;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: auto
+        }
+
+        .btn-print:hover {
+            background: #0f2a4a
+        }
+
+        .preview {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            background: #f1f5f9
+        }
+
+        .paper {
+            width: 800px;
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+            padding: 50px 70px;
+            font-family: var(--font-serif);
+            font-size: 10.5pt;
+            line-height: 1.6;
+            color: #111;
+            height: fit-content
+        }
+
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px
+        }
+
+        .invoice-header h1 {
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            color: var(--primary)
+        }
+
+        .invoice-header .meta {
+            text-align: right;
+            font-family: var(--font-sans);
+            font-size: .85rem;
+            color: var(--muted)
+        }
+
+        .invoice-header .meta p {
+            margin-bottom: 2px
+        }
+
+        .bill-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            gap: 40px
+        }
+
+        .bill-box {
+            flex: 1
+        }
+
+        .bill-box h3 {
+            font-family: var(--font-sans);
+            font-size: .75rem;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--muted);
+            margin-bottom: 6px
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-family: var(--font-sans);
+            font-size: .9rem
+        }
+
+        th {
+            background: var(--primary);
+            color: #fff;
+            padding: 10px 12px;
+            text-align: left;
+            font-size: .75rem;
+            text-transform: uppercase;
+            letter-spacing: .05em
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .total-row {
+            text-align: right;
+            margin-top: 10px;
+            font-family: var(--font-sans)
+        }
+
+        .total-row p {
+            font-size: .9rem;
+            color: var(--muted);
+            margin-bottom: 4px
+        }
+
+        .total-row .grand {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary)
+        }
+
+        .highlight {
+            background: rgba(37, 99, 235, .06);
+            border-bottom: 1px dashed var(--accent);
+            padding: 0 2px;
+            font-family: var(--font-sans)
+        }
+
+        @media(max-width:900px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                overflow: visible
+            }
+
+            .editor {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border)
+            }
+
+            .preview {
+                padding: 15px
+            }
+
+            .paper {
+                width: 100%;
+                padding: 25px 20px
+            }
+
+            .invoice-header {
+                flex-direction: column;
+                gap: 10px
+            }
+
+            .invoice-header .meta {
+                text-align: left
+            }
+
+            .bill-row {
+                flex-direction: column;
+                gap: 15px
+            }
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                display: block;
+                overflow: visible
+            }
+
+            .editor {
+                display: none !important
+            }
+
+            .preview {
+                background: #fff;
+                padding: 0;
+                overflow: visible;
+                display: block
+            }
+
+            .paper {
+                box-shadow: none;
+                width: 100%;
+                margin: 0;
+                padding: 40px 50px
+            }
+
+            .highlight {
+                border-bottom: none;
+                background: transparent
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="editor">
+        <h2>Invoice Generator</h2>
+        <div class="form-group"><label>Invoice #</label><input type="text" id="invNum" value="INV-2026-0042"
+                placeholder="Invoice #"></div>
+        <div class="form-group"><label>Date</label><input type="date" id="invDate" value="2026-06-15"
+                placeholder="Date"></div>
+        <div class="form-group"><label>Due Date</label><input type="date" id="dueDate" value="2026-07-15"
+                placeholder="Due Date"></div>
+        <div class="form-group"><label>Your Company</label><input type="text" id="companyName" value="Ariolas BV"
+                placeholder="Your Company"></div>
+        <div class="form-group"><label>Client Name</label><input type="text" id="clientName" value="TechCorp SA"
+                placeholder="Client Name"></div>
+        <div class="form-group"><label>Item Description</label><input type="text" id="itemDesc"
+                value="Enterprise Software License — Q3 2026" placeholder="Item Description"></div>
+        <div class="form-group"><label>Quantity</label><input type="number" id="qty" value="1" placeholder="Quantity">
+        </div>
+        <div class="form-group"><label>Unit Price (€)</label><input type="number" id="price" value="12500"
+                placeholder="Unit Price (€)"></div>
+        <div class="form-group"><label>Tax Rate (%)</label><input type="number" id="taxRate" value="21"
+                placeholder="Tax Rate (%)"></div>
+        <button class="btn-print" onclick="window.print()">Print / PDF</button>
+    </div>
+    <div class="preview">
+        <div class="paper" id="contractContent">
+            <div class="invoice-header">
+                <div>
+                    <h1>Invoice</h1>
+                </div>
+                <div class="meta">
+                    <p><strong id="p-invNum">INV-2026-0042</strong></p>
+                    <p>Date: <span id="p-invDate">15/06/2026</span></p>
+                    <p>Due: <span id="p-dueDate">15/07/2026</span></p>
+                </div>
+            </div>
+            <div class="bill-row">
+                <div class="bill-box">
+                    <h3>From</h3>
+                    <p id="p-companyName">Ariolas BV</p>
+                    <p>Rue de la Loi 16, 1000 Brussels</p>
+                    <p>BE 0799.123.456</p>
+                </div>
+                <div class="bill-box">
+                    <h3>To</h3>
+                    <p id="p-clientName">TechCorp SA</p>
+                    <p>Avenue des Arts 58, 1000 Brussels</p>
+                    <p>BE 0458.789.012</p>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Qty</th>
+                        <th>Unit Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td id="p-itemDesc">Enterprise Software License — Q3 2026</td>
+                        <td id="p-qty">1</td>
+                        <td id="p-unitPrice">€12,500.00</td>
+                        <td id="p-subtotal">€12,500.00</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="total-row">
+                <p>Subtotal: <span id="p-subtotal2">€12,500.00</span></p>
+                <p>VAT (<span id="p-taxRate">21</span>%): <span id="p-taxAmt">€2,625.00</span></p>
+                <p class="grand">Total: <span id="p-grandTotal">€15,125.00</span></p>
+            </div>
+        </div>
+    </div>
+    <script>
+        function updatePreview() {
+            const invNum = document.getElementById('invNum').value; document.getElementById('p-invNum').textContent = invNum; const d = document.getElementById('invDate').value; if (d) { const p = d.split('-'); document.getElementById('p-invDate').textContent = `${p[2]}/${p[1]}/${p[0]}` }
+            const dd = document.getElementById('dueDate').value; if (dd) { const p = dd.split('-'); document.getElementById('p-dueDate').textContent = `${p[2]}/${p[1]}/${p[0]}` }
+            document.getElementById('p-companyName').textContent = document.getElementById('companyName').value; document.getElementById('p-clientName').textContent = document.getElementById('clientName').value; document.getElementById('p-itemDesc').textContent = document.getElementById('itemDesc').value; const qty = parseFloat(document.getElementById('qty').value) || 0; const price = parseFloat(document.getElementById('price').value) || 0; const tax = parseFloat(document.getElementById('taxRate').value) || 0; const sub = qty * price; const taxAmt = sub * tax / 100; const total = sub + taxAmt; const fmt = n => '€' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); document.getElementById('p-qty').textContent = qty; document.getElementById('p-unitPrice').textContent = fmt(price); document.getElementById('p-subtotal').textContent = fmt(sub); document.getElementById('p-subtotal2').textContent = fmt(sub); document.getElementById('p-taxRate').textContent = tax; document.getElementById('p-taxAmt').textContent = fmt(taxAmt); document.getElementById('p-grandTotal').textContent = fmt(total)
+        }
+        document.querySelectorAll('.editor input').forEach(el => el.addEventListener('input', updatePreview)); updatePreview();
+    </script>
+</body>
+
+</html>

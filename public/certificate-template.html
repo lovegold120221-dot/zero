@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate of Completion - Template</title>
+    <style>
+        :root {
+            --primary: #1a202c;
+            --gold: #c9a84c;
+            --accent: #2b6cb0;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --muted: #64748b;
+            --font-serif: 'Georgia', serif;
+            --font-sans: 'Inter', -apple-system, sans-serif
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            height: 100vh;
+            overflow: hidden
+        }
+
+        .editor {
+            width: 340px;
+            background: #fff;
+            border-right: 1px solid #e2e8f0;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex-shrink: 0
+        }
+
+        .editor h2 {
+            font-size: 1.1rem;
+            color: var(--primary);
+            border-bottom: 2px solid var(--gold);
+            padding-bottom: 8px
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px
+        }
+
+        .form-group label {
+            font-size: .75rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .05em
+        }
+
+        .form-group input,
+        .form-group textarea {
+            padding: 8px 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: .9rem;
+            outline: none;
+            transition: border-color .2s;
+            font-family: var(--font-sans)
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 50px
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: var(--gold)
+        }
+
+        .btn-print {
+            background: var(--primary);
+            color: #fff;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: auto
+        }
+
+        .btn-print:hover {
+            background: #000
+        }
+
+        .preview {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            background: #f1f5f9
+        }
+
+        .paper {
+            width: 800px;
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+            padding: 60px 80px;
+            font-family: var(--font-serif);
+            height: fit-content;
+            text-align: center;
+            position: relative
+        }
+
+        .cert-border {
+            position: absolute;
+            inset: 15px;
+            border: 3px double var(--gold);
+            pointer-events: none
+        }
+
+        .cert-inner {
+            position: relative;
+            z-index: 1
+        }
+
+        .cert-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            color: var(--gold)
+        }
+
+        .cert-title {
+            font-size: 2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: var(--primary);
+            margin-bottom: 5px
+        }
+
+        .cert-sub {
+            font-size: .85rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: .15em;
+            font-family: var(--font-sans);
+            margin-bottom: 25px
+        }
+
+        .cert-seal {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid var(--gold);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            color: var(--gold);
+            line-height: 1
+        }
+
+        .cert-body {
+            font-size: 1rem;
+            line-height: 1.8;
+            max-width: 500px;
+            margin: 0 auto
+        }
+
+        .cert-body .recipient {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 10px 0
+        }
+
+        .cert-body .for-text {
+            color: var(--muted)
+        }
+
+        .cert-date {
+            font-family: var(--font-sans);
+            font-size: .85rem;
+            color: var(--muted);
+            margin-top: 30px
+        }
+
+        .cert-sign {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            text-align: center;
+            font-family: var(--font-sans);
+            font-size: .8rem;
+            gap: 30px
+        }
+
+        .cert-sign .sign-box {
+            flex: 1;
+            border-top: 1px solid var(--primary);
+            padding-top: 8px
+        }
+
+        .cert-sign .sign-box .label {
+            color: var(--muted);
+            font-size: .7rem;
+            text-transform: uppercase
+        }
+
+        .highlight {
+            background: rgba(201, 168, 76, .1);
+            border-bottom: 1px dashed var(--gold);
+            padding: 0 2px;
+            font-family: var(--font-sans)
+        }
+
+        @media(max-width:900px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                overflow: visible
+            }
+
+            .editor {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0
+            }
+
+            .preview {
+                padding: 15px
+            }
+
+            .paper {
+                width: 100%;
+                padding: 30px 20px
+            }
+
+            .cert-border {
+                inset: 8px
+            }
+
+            .cert-sign {
+                flex-direction: column;
+                gap: 20px
+            }
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                display: block;
+                overflow: visible
+            }
+
+            .editor {
+                display: none !important
+            }
+
+            .preview {
+                background: #fff;
+                padding: 0;
+                overflow: visible;
+                display: block
+            }
+
+            .paper {
+                box-shadow: none;
+                width: 100%;
+                margin: 0;
+                padding: 50px 60px
+            }
+
+            .highlight {
+                border-bottom: none;
+                background: transparent
+            }
+        }
+
+        .program-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+
+        .cert-description {
+            font-size: 0.9rem;
+            color: #555;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="editor">
+        <h2>Certificate Generator</h2>
+        <div class="form-group"><label>Certificate Type</label><input type="text" id="certType"
+                value="Certificate of Completion" placeholder="Certificate Type"></div>
+        <div class="form-group"><label>Recipient Name</label><input type="text" id="recipName"
+                value="Alice Van der Berg" placeholder="Recipient Name"></div>
+        <div class="form-group"><label>Program / Course</label><input type="text" id="program"
+                value="Executive Leadership Programme — Q2 2026" placeholder="Program / Course"></div>
+        <div class="form-group"><label>Description</label><textarea id="certDesc" rows="2"
+                placeholder="Description">For successfully completing the intensive 12-week Executive Leadership Programme, demonstrating exceptional strategic thinking and team management skills.</textarea>
+        </div>
+        <div class="form-group"><label>Date</label><input type="date" id="certDate" value="2026-06-15"
+                placeholder="Date"></div>
+        <div class="form-group"><label>Issuer Name</label><input type="text" id="issuer" value="Joe Lernout"
+                placeholder="Issuer Name"></div>
+        <div class="form-group"><label>Issuer Title</label><input type="text" id="issuerTitle"
+                value="Chief Executive Officer" placeholder="Issuer Title"></div>
+        <button class="btn-print" onclick="window.print()">Print / PDF</button>
+    </div>
+    <div class="preview">
+        <div class="paper">
+            <div class="cert-border"></div>
+            <div class="cert-inner">
+                <div class="cert-seal">★</div>
+                <div class="cert-title" id="p-certType">Certificate of Completion</div>
+                <div class="cert-sub">Awarded to</div>
+                <div class="cert-body">
+                    <div class="recipient" id="p-recipName">Alice Van der Berg</div>
+                    <div class="for-text">For successfully completing</div>
+                    <p class="program-text" id="p-program">Executive Leadership
+                        Programme — Q2 2026</p>
+                    <p class="cert-description" id="p-certDesc">For successfully completing
+                        the intensive 12-week Executive Leadership Programme, demonstrating exceptional strategic
+                        thinking and team management skills.</p>
+                </div>
+                <div class="cert-date">Awarded this <span id="p-certDate">15th day of June 2026</span></div>
+                <div class="cert-sign">
+                    <div class="sign-box">
+                        <p id="p-issuer">Joe Lernout</p>
+                        <p class="label" id="p-issuerTitle">Chief Executive Officer, Ariolas BV</p>
+                    </div>
+                    <div class="sign-box">
+                        <p>__________________</p>
+                        <p class="label">Date</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function updatePreview() {
+            document.getElementById('p-certType').textContent = document.getElementById('certType').value; document.getElementById('p-recipName').textContent = document.getElementById('recipName').value; document.getElementById('p-program').textContent = document.getElementById('program').value; document.getElementById('p-certDesc').textContent = document.getElementById('certDesc').value; const d = document.getElementById('certDate').value; if (d) { const p = d.split('-'); const day = parseInt(p[2]); const suffix = day === 1 ? 'st' : day === 2 ? 'nd' : day === 3 ? 'rd' : 'th'; const ms = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; document.getElementById('p-certDate').textContent = day + suffix + ' day of ' + ms[parseInt(p[1]) - 1] + ' ' + p[0] }
+            document.getElementById('p-issuer').textContent = document.getElementById('issuer').value; document.getElementById('p-issuerTitle').textContent = document.getElementById('issuerTitle').value + ', Ariolas BV'
+        }
+        document.querySelectorAll('.editor input,.editor textarea').forEach(el => el.addEventListener('input', updatePreview)); updatePreview();
+    </script>
+</body>
+
+</html>
