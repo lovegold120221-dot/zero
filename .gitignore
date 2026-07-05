@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+*.local
+projects_db.json
+public/preview/
+public/packages/
