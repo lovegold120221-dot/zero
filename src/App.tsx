@@ -131,21 +131,10 @@ export default function App() {
     try {
       const provider = new GoogleAuthProvider();
 
-      provider.addScope('https://mail.google.com/');
-      provider.addScope('https://www.googleapis.com/auth/drive');
-      provider.addScope('https://www.googleapis.com/auth/drive.file');
-      provider.addScope('https://www.googleapis.com/auth/drive.metadata.readonly');
-      provider.addScope('https://www.googleapis.com/auth/drive.appdata');
-      provider.addScope('https://www.googleapis.com/auth/calendar');
-      provider.addScope('https://www.googleapis.com/auth/calendar.events');
-      provider.addScope('https://www.googleapis.com/auth/calendar.readonly');
-      provider.addScope('https://www.googleapis.com/auth/tasks');
-      provider.addScope('https://www.googleapis.com/auth/youtube');
-      provider.addScope('https://www.googleapis.com/auth/youtube.force-ssl');
-      provider.addScope('https://www.googleapis.com/auth/spreadsheets');
-      provider.addScope('https://www.googleapis.com/auth/documents');
-      provider.addScope('https://www.googleapis.com/auth/contacts');
-      provider.addScope('https://www.googleapis.com/auth/userinfo.profile');
+      // Authentication only (openid + email + profile).
+      // Google API scopes (Drive, Gmail, Calendar, YouTube, etc.) are
+      // requested separately via incremental OAuth when each service is
+      // actually connected — never all at once in the initial sign-in.
 
       provider.setCustomParameters({
         prompt: 'consent',
