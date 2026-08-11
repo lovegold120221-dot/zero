@@ -66,7 +66,7 @@ export default function App() {
       setIsUploadingToDrive(true);
       let currentToken = driveToken;
       if (!currentToken) {
-        const result = await googleSignIn();
+        const result = await googleSignIn('https://www.googleapis.com/auth/drive.file');
         if (result) currentToken = result.accessToken;
       }
       if (!currentToken) return;

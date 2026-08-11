@@ -5,13 +5,14 @@ import firebaseConfig from '../../firebase-applet-config.json';
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-const provider = new GoogleAuthProvider();
-// Required scope for uploading to Google Drive
-provider.addScope('https://www.googleapis.com/auth/drive');
-provider.addScope('https://www.googleapis.com/auth/drive.file');
+// Authentication only (openid + email + profile) by default.
+// Google API scopes are requested incrementally via googleSignIn(scope)
+// only when the corresponding service action is actually performed.
+const DRIVE_FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
 let isSigningIn = false;
 let cachedAccessToken: string | null = null;
+let grantedScopes = new Set<string>();
 
 export const initAuth = (
   onAuthSuccess?: (user: User, token: string) => void,
@@ -32,15 +33,23 @@ export const initAuth = (
   });
 };
 
-export const googleSignIn = async (): Promise<{ user: User; accessToken: string } | null> => {
+export const googleSignIn = async (
+  scope?: string
+): Promise<{ user: User; accessToken: string } | null> => {
   try {
     isSigningIn = true;
+    const provider = new GoogleAuthProvider();
+    if (scope && !grantedScopes.has(scope)) {
+      provider.addScope(scope);
+      provider.setCustomParameters({ prompt: 'consent', access_type: 'offline' });
+    }
     const result = await signInWithPopup(auth, provider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
     if (!credential?.accessToken) {
       throw new Error('Failed to get access token from Firebase Auth');
     }
 
+    if (scope) grantedScopes.add(scope);
     cachedAccessToken = credential.accessToken;
     return { user: result.user, accessToken: cachedAccessToken };
   } catch (error: any) {
