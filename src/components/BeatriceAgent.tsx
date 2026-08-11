@@ -2495,7 +2495,8 @@ ${historyContext}
             grant_type: 'refresh_token'
           })
         });
-        const data = await res.json();
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : {};
         if (data.access_token) {
           setGoogleToken(data.access_token);
           googleTokenRef.current = data.access_token;
@@ -3843,7 +3844,8 @@ ${historyContext}
                           }),
                           signal: AbortSignal.timeout(310000),
                         });
-                        const data = await res.json();
+                        const text = await res.text();
+                        const data = text ? JSON.parse(text) : {};
                         if (!res.ok) throw new Error(data.error || `Sandbox returned ${res.status}`);
                         result = data;
                       } catch (e: any) {
@@ -3863,7 +3865,8 @@ ${historyContext}
                           }),
                           signal: AbortSignal.timeout(310000),
                         });
-                        const data = await res.json();
+                        const text = await res.text();
+                        const data = text ? JSON.parse(text) : {};
                         if (!res.ok) throw new Error(data.error || `Cerebras returned ${res.status}`);
                         result = data;
                       } catch (e: any) {

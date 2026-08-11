@@ -15,7 +15,7 @@ import { WhatsAppManager } from './whatsapp';
 import * as waTools from './whatsapp-tools';
 import * as belgianTools from './belgian-tools';
 const app = express();
-const PORT = process.env.SANDBOX_PORT ? parseInt(process.env.SANDBOX_PORT) : 4200;
+const PORT = parseInt(process.env.PORT || process.env.SANDBOX_PORT || '4200');
 
 app.use(cors({
   origin: '*',
