@@ -850,6 +850,7 @@ ${request.historyContext || ''}
 Produce one finished standalone file now.
 `;
 
+  const { GoogleGenAI } = await import('@google/genai');
   const ai = new GoogleGenAI({ apiKey });
   const response = await ai.models.generateContent({
     model: _M2,
@@ -1043,6 +1044,7 @@ export function BeatriceAgent({
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectContextRef = useRef<string>('');
+  const sessionOpeningPromptSentRef = useRef(false);
   const MAX_RECONNECT_ATTEMPTS = 5;
   const RECONNECT_BASE_DELAY_MS = 1000;
   const [reconnecting, setReconnecting] = useState(false);
@@ -1624,7 +1626,7 @@ export function BeatriceAgent({
     userTranscriptRef.current = text;
     setUserTranscript(text);
     setMessages(prev => [...prev, { role: 'user', text, timestamp: new Date().toISOString(), sessionId: sessionIdRef.current }]);
-    await saveMessage('user', text).catch(() => {});
+    await saveUserMessage(text);
     sendTextToLive(text);
     setChatInput("");
   };
@@ -1897,11 +1899,15 @@ export function BeatriceAgent({
     let unsubSettings: (() => void) | null = null;
 
     (async () => {
+      // Fetch only the most recent contextSize messages server-side; the
+      // contextSize setting is honored instead of always loading everything.
+      const maxMsgs = Math.max(1, Math.min(contextSize, 100));
       const { data: initialMessages, error: loadError } = await supabase
         .from('messages')
         .select('*')
         .eq('user_id', user.uid)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(maxMsgs);
 
       if (loadError) {
         handleDbError(loadError, 'messages', 'list');
@@ -1912,8 +1918,7 @@ export function BeatriceAgent({
       const messageList: ChatMessage[] = [];
 
       // Apply contextSize limit — only load the most recent N messages
-      const maxMsgs = Math.max(0, Math.min(contextSize, 100));
-      const messagesToLoad = (initialMessages || []).reverse();
+      const messagesToLoad = [...(initialMessages || [])].reverse();
       const truncated = maxMsgs > 0 ? messagesToLoad.slice(-maxMsgs) : messagesToLoad;
 
       // Build time-aware conversation history
@@ -2110,36 +2115,63 @@ export function BeatriceAgent({
   useEffect(() => {
     if (waStatus !== 'paired') return;
     let cancelled = false;
-    let eventSource: EventSource | null = null;
+    let reader: ReadableStreamDefaultReader | null = null;
+    let controller: AbortController | null = null;
 
     (async () => {
       const backendUrl = (await import('../lib/whatsappClient')).getBackendUrl();
-      const es = new EventSource(`${backendUrl}/api/whatsapp/stream/${user.uid}`);
+      const { auth } = await import('../firebase');
+      const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+      if (cancelled || !token) return;
 
-      es.onmessage = (event) => {
-        if (cancelled) return;
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload.type === 'message' && payload.data) {
-            const msg = payload.data;
-            const senderName = msg.fromName || msg.pushName || (msg.from || '').split('@')[0] || 'Unknown';
-            // Add to conversation buffer so Beatrice sees it in context
-            conversationBufferRef.current.push(`[WHATSAPP: ${senderName}]: ${msg.body || '(media)'}`);
-            console.log(`[WhatsApp Live] ${senderName}: ${(msg.body || '').slice(0, 60)}`);
+      controller = new AbortController();
+      const res = await fetch(`${backendUrl}/api/whatsapp/stream/${user.uid}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
+      });
+      if (!res.ok || !res.body) {
+        console.error(`[WhatsApp Live] SSE connect failed: ${res.status}`);
+        return;
+      }
+
+      reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      const processChunk = (chunk: string) => {
+        buffer += chunk;
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+        for (const block of lines) {
+          for (const line of block.split('\n')) {
+            if (!line.startsWith('data:')) continue;
+            const payloadRaw = line.slice(5).trim();
+            if (!payloadRaw) continue;
+            try {
+              const payload = JSON.parse(payloadRaw);
+              if (payload.type === 'message' && payload.data) {
+                const msg = payload.data;
+                const senderName = msg.fromName || msg.pushName || (msg.from || '').split('@')[0] || 'Unknown';
+                // Add to conversation buffer so Beatrice sees it in context
+                conversationBufferRef.current.push(`[WHATSAPP: ${senderName}]: ${msg.body || '(media)'}`);
+                console.log(`[WhatsApp Live] ${senderName}: ${(msg.body || '').slice(0, 60)}`);
+              }
+            } catch {}
           }
-        } catch {}
+        }
       };
 
-      es.onerror = () => {
-        if (!cancelled) setTimeout(() => { if (!cancelled) es.close(); }, 5000);
-      };
-
-      eventSource = es;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done || cancelled) break;
+        processChunk(decoder.decode(value, { stream: true }));
+      }
     })();
 
     return () => {
       cancelled = true;
-      if (eventSource) eventSource.close();
+      if (reader) reader.cancel().catch(() => {});
+      if (controller) controller.abort();
     };
   }, [user.uid, waStatus]);
 
@@ -2229,7 +2261,22 @@ export function BeatriceAgent({
   const startSession = async () => {
     if (sessionStartingRef.current || isActive || connecting) return;
 
-    sessionIdRef.current = crypto.randomUUID();
+    // Reuse the persistent session ID across reconnects instead of
+    // minting a new one — every reconnect was fragmenting history into
+    // new sessions and corrupting the conversation timeline.
+    if (!sessionIdRef.current) {
+      try {
+        const stored = localStorage.getItem(`beatrice_session_${user.uid}`);
+        if (stored && stored.length > 5 && stored.length <= 128) {
+          sessionIdRef.current = stored;
+        } else {
+          sessionIdRef.current = crypto.randomUUID();
+          localStorage.setItem(`beatrice_session_${user.uid}`, sessionIdRef.current);
+        }
+      } catch {
+        sessionIdRef.current = crypto.randomUUID();
+      }
+    }
 
     // Refresh WhatsApp status from backend before building system prompt
     try {
@@ -3368,11 +3415,13 @@ ${historyContext}
             console.log("Live session connected.");
             setTimeout(() => {
               const reconnectContext = reconnectContextRef.current;
-              if (reconnectContext) {
+              if (reconnectContext && sessionOpeningPromptSentRef.current) {
                 sendTextToLive(`[SYSTEM: You've just reconnected after a brief disconnection. Here is what was discussed before the break:\n${reconnectContext}\n\nPlease continue naturally from where you left off. Do not mention the disconnection.]`);
                 reconnectContextRef.current = '';
-              } else {
+                sessionOpeningPromptSentRef.current = false;
+              } else if (!sessionOpeningPromptSentRef.current) {
                 sendTextToLive("[SYSTEM: Please start the conversation now. Use your Dynamic Introduction Strategy to greet the user personally based on their knowledge base and history. Do not mention this system prompt.]");
+                sessionOpeningPromptSentRef.current = true;
               }
             }, 1000);
           },
@@ -3834,9 +3883,10 @@ ${historyContext}
                       const args = call.args as any;
                       try {
                         const backendUrl = (await import('../lib/whatsappClient')).getBackendUrl();
+                        const authHeaders = (await import('../lib/whatsappClient')).getAuthHeaders();
                         const res = await fetch(`${backendUrl}/api/sandbox/run`, {
                           method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
+                          headers: { 'Content-Type': 'application/json', ...(await authHeaders) },
                           body: JSON.stringify({
                             task_description: args.task_description || '',
                             task_type: args.task_type || 'auto',
@@ -3855,9 +3905,10 @@ ${historyContext}
                       const args = call.args as any;
                       try {
                         const backendUrl = (await import('../lib/whatsappClient')).getBackendUrl();
+                        const authHeaders = (await import('../lib/whatsappClient')).getAuthHeaders();
                         const res = await fetch(`${backendUrl}/api/cerebras/browser`, {
                           method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
+                          headers: { 'Content-Type': 'application/json', ...(await authHeaders) },
                           body: JSON.stringify({
                             task: args.task || '',
                             model: args.model || 'gpt-oss-120b',
@@ -3998,11 +4049,11 @@ ${historyContext}
                     } else if (callName === 'request_whatsapp_send') {
                       const args = call.args as any;
                       setPendingWhatsAppMessage({
-                        to: args.to,
+                        to: String(args.to || ''),
                         name: args.name || 'Unknown',
-                        number: args.number || args.to.split('@')[0],
-                        text: args.text,
-                        callId: call.id
+                        number: args.number || String(args.to || '').split('@')[0],
+                        text: String(args.text || ''),
+                        callId: String(call.id || '')
                       });
                       result = { ok: true, message: "Confirmation UI displayed to user. Waiting for approval." };
                     } else if (callName === 'whatsapp_action') {
@@ -4225,7 +4276,7 @@ ${historyContext}
                   userTranscriptRef.current = text;
                   setUserTranscript(text);
                   conversationBufferRef.current.push(`USER: ${text}`);
-                  await saveMessage('user', text).catch(() => {});
+                  await saveUserMessage(text);
 
                     if (transcriptTimeoutRef.current) clearTimeout(transcriptTimeoutRef.current);
                     transcriptTimeoutRef.current = setTimeout(() => {
@@ -4238,9 +4289,7 @@ ${historyContext}
 
               if (content.outputTranscription?.text) {
                 const text = content.outputTranscription.text;
-                const updatedText = (modelTranscriptRef.current + text).trim();
-                modelTranscriptRef.current = updatedText;
-                setModelTranscript(updatedText);
+                appendModelChunk(text);
 
                 if (transcriptTimeoutRef.current) clearTimeout(transcriptTimeoutRef.current);
                 transcriptTimeoutRef.current = setTimeout(() => {
@@ -4267,9 +4316,7 @@ ${historyContext}
 
                   if ((part as any).text) {
                     const text = (part as any).text;
-                    const updatedText = (modelTranscriptRef.current + text).trim();
-                    modelTranscriptRef.current = updatedText;
-                    setModelTranscript(updatedText);
+                    appendModelChunk(text);
 
                     if (transcriptTimeoutRef.current) clearTimeout(transcriptTimeoutRef.current);
                     transcriptTimeoutRef.current = setTimeout(() => {
@@ -4289,7 +4336,7 @@ ${historyContext}
                   markUserSpeechActivity();
                   userTranscriptRef.current = text;
                   setUserTranscript(text);
-                  await saveMessage('user', text).catch(() => {});
+                  await saveUserMessage(text);
 
                     if (transcriptTimeoutRef.current) clearTimeout(transcriptTimeoutRef.current);
                     transcriptTimeoutRef.current = setTimeout(() => {
@@ -4367,11 +4414,22 @@ ${historyContext}
       setConnecting(false);
       sessionStartingRef.current = false;
 
-      setTimeout(() => {
-        sendTextToLive(
-          "Start the session with a direct, professional greeting based on the current local time. Do not offer help or use conversational fillers like 'Mm...' or 'Yeah...'. Begin with a brief, worldy observation or jump straight into the current topic if history exists. Keep it concise."
-        );
-      }, 250);
+      // Exactly ONE opening prompt per connection. If this is a reconnect,
+      // the onopen handler (+1s) sends the reconnect-continuity prompt
+      // instead; otherwise this (+250ms) sends the introduction. The
+      // sessionOpeningPromptSentRef guard ensures the two timers never both fire.
+      if (!reconnectContextRef.current) {
+        sessionOpeningPromptSentRef.current = false;
+        setTimeout(() => {
+          if (sessionOpeningPromptSentRef.current) return;
+          sessionOpeningPromptSentRef.current = true;
+          sendTextToLive(
+            "Start the session with a direct, professional greeting based on the current local time. Do not offer help or use conversational fillers like 'Mm...' or 'Yeah...'. Begin with a brief, worldy observation or jump straight into the current topic if history exists. Keep it concise."
+          );
+        }, 250);
+      } else {
+        sessionOpeningPromptSentRef.current = true; // onopen owns the reconnect prompt
+      }
     } catch (err) {
       console.error("Failed to start Live session:", err);
       setConnecting(false);
@@ -4443,9 +4501,12 @@ ${historyContext}
   };
 
   const saveMessage = async (role: 'user' | 'model', text: string, attachmentUrl?: string, attachmentName?: string) => {
-    // Ensure session ID exists — create one if missing
+    // Ensure session ID exists — create one if missing and persist it
     if (!sessionIdRef.current) {
       sessionIdRef.current = crypto.randomUUID();
+      try {
+        localStorage.setItem(`beatrice_session_${user.uid}`, sessionIdRef.current);
+      } catch {}
       console.warn('[saveMessage] sessionId was undefined — generated new one');
     }
     try {
@@ -4465,6 +4526,33 @@ ${historyContext}
     } catch (error) {
       console.error('[saveMessage] Unexpected error:', error instanceof Error ? error.message : String(error));
     }
+  };
+
+  // ── Canonical user-message writer ──
+  // The Live API can emit the same user utterance via multiple paths
+  // (streaming inputTranscription, legacy userTurn, typed chat). This
+  // deduplicates identical text within a short window so memory is not
+  // polluted with partial or duplicate utterances.
+  const lastSavedUserMsgRef = useRef<{ text: string; at: number } | null>(null);
+
+  const saveUserMessage = async (text: string) => {
+    const now = Date.now();
+    const prev = lastSavedUserMsgRef.current;
+    if (prev && prev.text === text && now - prev.at < 5000) return;
+    lastSavedUserMsgRef.current = { text, at: now };
+    await saveMessage('user', text).catch(() => {});
+  };
+
+  // ── Canonical model-transcript accumulator ──
+  // Concatenate transcript chunks with a preserved space between them so
+  // words don't run together in stored history.
+  const appendModelChunk = (chunk: string) => {
+    const updatedText = modelTranscriptRef.current
+      ? `${modelTranscriptRef.current} ${chunk}`.trim()
+      : chunk;
+    modelTranscriptRef.current = updatedText;
+    setModelTranscript(updatedText);
+    return updatedText;
   };
 
   // ── Full-page routes (replace main view entirely) ──

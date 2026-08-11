@@ -78,7 +78,7 @@ const BELGIAN_COMPANIES: Record<string, CompanyData> = {
 /**
  * 1. KBO/CBE Company Lookup
  */
-export async function lookupCompany(query: string): Promise<{ ok: boolean; company?: CompanyData; message?: string }> {
+export async function lookupCompany(query: string): Promise<{ ok: boolean; company?: CompanyData; message?: string; simulated?: boolean }> {
   const norm = query.toLowerCase().trim();
 
   // Try matching local database first
@@ -94,6 +94,7 @@ export async function lookupCompany(query: string): Promise<{ ok: boolean; compa
     const formattedBce = `${cleanNum.slice(0, 4)}.${cleanNum.slice(4, 7)}.${cleanNum.slice(7, 10)}`;
     return {
       ok: true,
+      simulated: true,
       company: {
         bce: formattedBce,
         name: `MOCK BELGIUM SOLUTIONS SRL (Simulated for BCE ${formattedBce})`,
@@ -114,6 +115,7 @@ export async function lookupCompany(query: string): Promise<{ ok: boolean; compa
 
   return {
     ok: true,
+    simulated: true,
     company: {
       bce: formattedBce,
       name: proposedName,
@@ -130,7 +132,7 @@ export async function lookupCompany(query: string): Promise<{ ok: boolean; compa
 /**
  * 2. VIES VAT Validation
  */
-export async function validateViesVat(vatNumber: string): Promise<{ ok: boolean; isValid: boolean; countryCode: string; vatNumber: string; name?: string; address?: string; error?: string }> {
+export async function validateViesVat(vatNumber: string): Promise<{ ok: boolean; isValid: boolean; countryCode: string; vatNumber: string; name?: string; address?: string; error?: string; verified?: boolean; simulated?: boolean }> {
   // Sanitize input (remove BE, spaces, dots, dashes)
   const cleanVat = vatNumber.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
   const countryCode = cleanVat.startsWith('BE') ? 'BE' : cleanVat.match(/^[A-Z]{2}/) ? cleanVat.slice(0, 2) : 'BE';
@@ -173,6 +175,8 @@ export async function validateViesVat(vatNumber: string): Promise<{ ok: boolean;
 
   return {
     ok: true,
+    verified: false,
+    simulated: !isValidFormat,
     isValid: isValidFormat,
     countryCode,
     vatNumber: numberOnly,

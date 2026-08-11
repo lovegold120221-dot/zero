@@ -1,5 +1,18 @@
 const BACKEND_URL_KEY = 'beatrice_backend_url';
 
+// Lazily resolve the current Firebase ID token so every backend request is
+// authenticated server-side (see server/auth.ts).
+export async function getAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    const { auth } = await import('../firebase');
+    if (auth.currentUser) {
+      const token = await auth.currentUser.getIdToken();
+      return { Authorization: `Bearer ${token}` };
+    }
+  } catch {}
+  return {};
+}
+
 export function getBackendUrl(): string {
   const envUrl = (typeof import.meta !== 'undefined' && ((import.meta as any).env?.VITE_BACKEND_URL || (import.meta as any).env?.VITE_SANDBOX_URL)) || '';
   
@@ -40,10 +53,12 @@ export function setBackendUrl(url: string): string {
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const authHeaders = await getAuthHeaders();
   const res = await fetch(`${getBackendUrl()}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
       ...(init?.headers || {}),
     },
   });
@@ -66,10 +81,11 @@ export async function getWhatsAppStatus(userId: string): Promise<{
   error?: string;
   pairingCode?: string;
 }> {
-  const res = await fetch(`${getBackendUrl()}/api/whatsapp/status/${encodeURIComponent(userId)}`);
+  const authHeaders = await getAuthHeaders();
+  const res = await fetch(`${getBackendUrl()}/api/whatsapp/status/${encodeURIComponent(userId)}`, { headers: authHeaders });
   if (!res.ok) return { status: 'error', error: `Server returned ${res.status}` };
   const text = await res.text();
-  return text ? JSON.parse(text) : {};
+  return text ? (JSON.parse(text) as any) : { status: 'error', error: 'Empty status response' };
 }
 
 export async function disconnectWhatsApp(userId: string): Promise<void> {
@@ -83,7 +99,7 @@ export async function sendWhatsAppMessage(
   userId: string,
   to: string,
   text: string,
-  permissions?: Record<string, boolean>,
+  permissions?: Record<string, any>,
 ): Promise<any> {
   return requestJson('/api/whatsapp/send', {
     method: 'POST',
@@ -95,7 +111,7 @@ export async function callWhatsAppTool(
   userId: string,
   tool: string,
   params: Record<string, any>,
-  permissions?: Record<string, boolean>,
+  permissions?: Record<string, any>,
 ): Promise<any> {
   return requestJson('/api/whatsapp/tool', {
     method: 'POST',
@@ -104,10 +120,11 @@ export async function callWhatsAppTool(
 }
 
 export async function getWhatsAppMessages(userId: string, limit = 20): Promise<{ messages: any[] }> {
-  const res = await fetch(`${getBackendUrl()}/api/whatsapp/messages/${encodeURIComponent(userId)}?limit=${limit}`);
+  const authHeaders = await getAuthHeaders();
+  const res = await fetch(`${getBackendUrl()}/api/whatsapp/messages/${encodeURIComponent(userId)}?limit=${limit}`, { headers: authHeaders });
   if (!res.ok) throw new Error(`Server returned ${res.status}`);
   const text = await res.text();
-  return text ? JSON.parse(text) : {};
+  return text ? (JSON.parse(text) as any) : { messages: [] };
 }
 
 export async function getWhatsAppAdminOverview(userId: string): Promise<any> {
@@ -157,7 +174,7 @@ export interface WaMessageRecord {
  */
 export async function fetchWhatsAppChats(
   userId: string,
-  permissions: Record<string, boolean>,
+  permissions: Record<string, any>,
   limit = 30,
 ): Promise<{ ok: boolean; chats: WaChatSummary[]; error?: string }> {
   const res = await callWhatsAppTool(userId, 'readChats', { limit }, permissions);
@@ -171,7 +188,7 @@ export async function fetchWhatsAppChats(
 export async function fetchWhatsAppHistory(
   userId: string,
   chatId: string,
-  permissions: Record<string, boolean>,
+  permissions: Record<string, any>,
   limit = 50,
 ): Promise<{ ok: boolean; messages: WaMessageRecord[]; error?: string }> {
   const res = await callWhatsAppTool(userId, 'getMessageHistory', { chatId, limit }, permissions);

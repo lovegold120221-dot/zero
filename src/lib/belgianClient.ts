@@ -1,4 +1,4 @@
-import { getBackendUrl } from './whatsappClient';
+import { getBackendUrl, getAuthHeaders } from './whatsappClient';
 
 /**
  * Executes a Belgian-specific administrative or business tool on the backend Express server.
@@ -7,10 +7,12 @@ import { getBackendUrl } from './whatsappClient';
  */
 export async function callBelgianTool(tool: string, params: Record<string, any> = {}): Promise<any> {
   const backendUrl = getBackendUrl();
+  const authHeaders = await getAuthHeaders();
   const response = await fetch(`${backendUrl}/api/belgian/tool`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
     },
     body: JSON.stringify({
       tool,

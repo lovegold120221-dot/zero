@@ -14,14 +14,33 @@ import { downloadContentFromMessage } from '@whiskeysockets/baileys';
 import { WhatsAppManager } from './whatsapp';
 import * as waTools from './whatsapp-tools';
 import * as belgianTools from './belgian-tools';
+import { execSync } from 'child_process';
+import { requireAuth, allowedOrigins } from './auth';
+import { receipt, failure, validateParams } from './tool-safety';
+
 const app = express();
-const PORT = parseInt(process.env.PORT || process.env.SANDBOX_PORT || '4200');
+const PORT = process.env.SANDBOX_PORT ? parseInt(process.env.SANDBOX_PORT) : 4200;
 
 app.use(cors({
-  origin: '*',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins().includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Reject requests from disallowed origins before they reach any handler
+app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err?.message?.includes('not allowed by CORS')) {
+    res.status(403).json({ error: 'Origin not allowed' });
+    return;
+  }
+  next(err);
+});
 
 // Set security headers to allow cross-origin popups (required for Google/Firebase Auth)
 app.use((_req, res, next) => {
@@ -69,7 +88,7 @@ app.get('/api/health', async (_req, res) => {
   res.json({ status: 'ok', worker: 'client-side' });
 });
 
-app.post('/api/web/glance', async (req, res) => {
+app.post('/api/web/glance', requireAuth, async (req, res) => {
   try {
     const query = typeof req.body?.query === 'string' ? req.body.query.trim() : '';
     const maxResults = Math.max(1, Math.min(Number(req.body?.maxResults) || 3, 5));
@@ -130,13 +149,82 @@ app.post('/api/web/glance', async (req, res) => {
 
 // ── Belgian Admin & Business Tools Route ──
 
-app.post('/api/belgian/tool', async (req, res) => {
+const BELGIAN_TOOL_SCHEMAS: Record<string, { schema: import('./tool-safety').SchemaSpec; source: 'external' | 'local' | 'mock' }> = {
+  belgian_company_lookup: {
+    schema: { query: { type: 'string', min: 2, max: 200 } },
+    source: 'external',
+  },
+  belgian_vies_vat_validate: {
+    schema: { vatNumber: { type: 'string', min: 4, max: 20 } },
+    source: 'external',
+  },
+  belgian_peppol_invoice: {
+    schema: {
+      recipientKbo: { type: 'string', min: 4, max: 20 },
+      amount: { type: 'number', min: 0, max: 1_000_000_000 },
+      description: { type: 'string', min: 1, max: 1000 },
+      dueDate: { type: 'string', max: 40 },
+    },
+    source: 'local',
+  },
+  belgian_tax_calendar: {
+    schema: { period: { type: 'string', max: 20 } },
+    source: 'external',
+  },
+  belgian_registration_tax_calc: {
+    schema: {
+      purchasePrice: { type: 'number', min: 0, max: 1_000_000_000 },
+      region: { type: 'string', max: 50 },
+    },
+    source: 'local',
+  },
+  belgian_itsme_navigator: {
+    schema: { administrativeTask: { type: 'string', min: 2, max: 300 } },
+    source: 'local',
+  },
+  belgian_language_bridge: {
+    schema: { text: { type: 'string', min: 1, max: 5000 }, targetLanguage: { type: 'string', max: 10 } },
+    source: 'local',
+  },
+  belgian_social_security_navigator: {
+    schema: { query: { type: 'string', min: 2, max: 300 } },
+    source: 'local',
+  },
+  belgian_labor_law_simplifier: {
+    schema: {
+      clauseType: { type: 'string', min: 2, max: 100 },
+      contractType: { type: 'string', max: 50 },
+      durationMonths: { type: 'number', min: 0, max: 1200 },
+      salary: { type: 'number', min: 0, max: 1_000_000_000 },
+    },
+    source: 'local',
+  },
+  belgian_mobility_planner: {
+    schema: { from: { type: 'string', min: 2, max: 100 }, to: { type: 'string', min: 2, max: 100 }, time: { type: 'string', max: 10 } },
+    source: 'external',
+  },
+};
+
+app.post('/api/belgian/tool', requireAuth, async (req, res) => {
   try {
     const { tool } = req.body;
     const params = req.body.params || {};
 
     if (!tool) {
       res.status(400).json({ error: 'tool is required' });
+      return;
+    }
+
+    const toolSpec = BELGIAN_TOOL_SCHEMAS[tool];
+    if (!toolSpec) {
+      // Fail closed: unknown tools are rejected outright.
+      res.status(400).json({ ok: false, error: `Unknown Belgian tool: ${tool}` });
+      return;
+    }
+
+    const validation = validateParams(params, toolSpec.schema);
+    if (!validation.valid) {
+      res.status(400).json({ ok: false, error: validation.error });
       return;
     }
 
@@ -187,14 +275,30 @@ app.post('/api/belgian/tool', async (req, res) => {
       case 'belgian_mobility_planner':
         result = await belgianTools.getBelgianMobility(String(params.from || ''), String(params.to || ''), params.time ? String(params.time) : undefined);
         break;
-      default:
-        res.status(400).json({ error: `Unknown Belgian tool: ${tool}` });
-        return;
     }
-    res.json(result);
+
+    // Wrap every result in a structured execution receipt so the agent can
+    // distinguish real external data from simulated fallback output.
+    if (result && typeof result === 'object' && 'ok' in result) {
+      const simulated = (result as any).simulated === true || (result as any).source === 'mock';
+      const verified = (result as any).verified === true || (toolSpec.source === 'external' && !!result.ok && !simulated);
+      res.json({
+        ...result,
+        ...receipt({
+          ok: !!result.ok,
+          source: result.ok ? toolSpec.source : 'error',
+          verified,
+          simulated,
+          confidence: result.ok ? (simulated ? 0.5 : verified ? 0.9 : 0.7) : 0,
+        }),
+      });
+      return;
+    }
+
+    res.json({ ...result, ...receipt({ ok: true, source: toolSpec.source, verified: toolSpec.source === 'external', simulated: false }) });
   } catch (err: any) {
     console.error('Belgian tool error:', err);
-    res.status(500).json({ error: err.message || 'Belgian tool execution failed' });
+    res.status(500).json({ ...failure(err.message || 'Belgian tool execution failed') });
   }
 });
 
@@ -203,7 +307,7 @@ app.post('/api/belgian/tool', async (req, res) => {
 // Set OLLAMA_BASE_URL to override (default: http://localhost:11434)
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
 
-app.post('/api/ollama/generate', async (req, res) => {
+app.post('/api/ollama/generate', requireAuth, async (req, res) => {
   const { model, messages, options } = req.body;
   if (!model || !messages) {
     res.status(400).json({ error: 'model and messages are required' });
@@ -281,10 +385,11 @@ app.post('/api/ollama/generate', async (req, res) => {
 
 const getMsg = (e: any) => e?.message || String(e);
 
-  app.post('/api/whatsapp/pair', async (req, res) => {
+  app.post('/api/whatsapp/pair', requireAuth, async (req, res) => {
     try {
       const { userId, phoneNumber } = req.body;
       if (!userId) { res.status(400).json({ error: 'userId required' }); return; }
+      if (req.user!.uid !== userId) { res.status(403).json({ error: 'Forbidden: userId does not match authenticated user' }); return; }
       const result = await waManager!.startPairing(userId, phoneNumber);
       if ('error' in result) { res.status(500).json(result); return; }
       res.json(result);
@@ -293,8 +398,9 @@ const getMsg = (e: any) => e?.message || String(e);
     }
   });
 
-  app.get('/api/whatsapp/status/:userId', async (req, res) => {
+  app.get('/api/whatsapp/status/:userId', requireAuth, async (req, res) => {
     try {
+      if (req.user!.uid !== req.params.userId) { res.status(403).json({ error: 'Forbidden' }); return; }
       const status = await waManager!.getStatusOrStart(req.params.userId);
       if (!status) { res.json({ status: 'not_found' }); return; }
       res.json(status);
@@ -303,8 +409,9 @@ const getMsg = (e: any) => e?.message || String(e);
     }
   });
 
-  app.get('/api/whatsapp/qr/:userId', async (req, res) => {
+  app.get('/api/whatsapp/qr/:userId', requireAuth, async (req, res) => {
     try {
+      if (req.user!.uid !== req.params.userId) { res.status(403).json({ error: 'Forbidden' }); return; }
       const status = await waManager!.getStatusOrStart(req.params.userId);
       let qrCode = status?.qrCode;
       if (!qrCode) {
@@ -328,14 +435,16 @@ const getMsg = (e: any) => e?.message || String(e);
     }
   });
 
-  app.get('/api/whatsapp/messages/:userId', (req, res) => {
+  app.get('/api/whatsapp/messages/:userId', requireAuth, (req, res) => {
+    if (req.user!.uid !== req.params.userId) { res.status(403).json({ error: 'Forbidden' }); return; }
     const limit = parseInt(req.query.limit as string) || 20;
     const messages = waManager!.getRecentMessages(req.params.userId, limit);
     res.json({ messages });
   });
 
-  app.get('/api/whatsapp/admin/overview/:userId', async (req, res) => {
+  app.get('/api/whatsapp/admin/overview/:userId', requireAuth, async (req, res) => {
     try {
+      if (req.user!.uid !== req.params.userId) { res.status(403).json({ error: 'Forbidden' }); return; }
       const overview = await waManager!.getAdminOverview(req.params.userId);
       res.json(overview);
     } catch (err: any) {
@@ -343,10 +452,11 @@ const getMsg = (e: any) => e?.message || String(e);
     }
   });
 
-  app.post('/api/whatsapp/admin/config', async (req, res) => {
+  app.post('/api/whatsapp/admin/config', requireAuth, async (req, res) => {
     try {
       const { userId, config } = req.body;
       if (!userId || !config) { res.status(400).json({ error: 'userId and config required' }); return; }
+      if (req.user!.uid !== userId) { res.status(403).json({ error: 'Forbidden: userId does not match authenticated user' }); return; }
       const saved = waManager!.saveAdminConfig(userId, config);
       res.json({ ok: true, config: saved });
     } catch (err: any) {
@@ -354,8 +464,9 @@ const getMsg = (e: any) => e?.message || String(e);
     }
   });
 
-  app.get('/api/whatsapp/profile-pic/:userId', async (req, res) => {
+  app.get('/api/whatsapp/profile-pic/:userId', requireAuth, async (req, res) => {
     try {
+      if (req.user!.uid !== req.params.userId) { res.status(403).json({ error: 'Forbidden' }); return; }
       const { jid } = req.query;
       if (!jid) { res.status(400).json({ error: 'jid query param required' }); return; }
       const sock = waManager!.getClient(req.params.userId);
@@ -368,9 +479,10 @@ const getMsg = (e: any) => e?.message || String(e);
     }
   });
 
-  app.get('/api/whatsapp/media/:userId/:chatId/:messageId', async (req, res) => {
+  app.get('/api/whatsapp/media/:userId/:chatId/:messageId', requireAuth, async (req, res) => {
     try {
       const { userId, chatId, messageId } = req.params;
+      if (req.user!.uid !== userId) { res.status(403).json({ error: 'Forbidden' }); return; }
       const sock = waManager!.getClient(userId);
       if (!sock) { res.status(404).json({ error: 'Not connected' }); return; }
       const msg = (waManager as any).getMessageById?.(userId, chatId, messageId);
@@ -402,10 +514,11 @@ const getMsg = (e: any) => e?.message || String(e);
     }
   });
 
-  app.post('/api/whatsapp/disconnect', async (req, res) => {
+  app.post('/api/whatsapp/disconnect', requireAuth, async (req, res) => {
     try {
       const { userId } = req.body;
       if (!userId) { res.status(400).json({ error: 'userId required' }); return; }
+      if (req.user!.uid !== userId) { res.status(403).json({ error: 'Forbidden: userId does not match authenticated user' }); return; }
       await waManager!.disconnect(userId);
       res.json({ ok: true });
     } catch (err: any) {
@@ -413,10 +526,11 @@ const getMsg = (e: any) => e?.message || String(e);
     }
   });
 
-  app.post('/api/whatsapp/send', async (req, res) => {
+  app.post('/api/whatsapp/send', requireAuth, async (req, res) => {
     try {
       const { userId, to, text, permissions } = req.body;
       if (!userId || !to || !text) { res.status(400).json({ error: 'userId, to, text required' }); return; }
+      if (req.user!.uid !== userId) { res.status(403).json({ error: 'Forbidden: userId does not match authenticated user' }); return; }
       const effectivePermissions = waManager!.getEffectivePermissions(userId, permissions);
       const result = await waTools.handleSendMessage(waManager!, userId, effectivePermissions, to, text);
       res.json(result);
@@ -425,11 +539,12 @@ const getMsg = (e: any) => e?.message || String(e);
     }
   });
 
-  app.post('/api/whatsapp/tool', async (req, res) => {
+  app.post('/api/whatsapp/tool', requireAuth, async (req, res) => {
     try {
       const { userId, tool, permissions } = req.body;
       const params = req.body.params || {};
       if (!userId || !tool) { res.status(400).json({ error: 'userId and tool required' }); return; }
+      if (req.user!.uid !== userId) { res.status(403).json({ error: 'Forbidden: userId does not match authenticated user' }); return; }
       const result = await waTools.handleWhatsAppAction(waManager!, userId, tool, params, permissions);
       res.json(result);
     } catch (err: any) {
@@ -459,8 +574,9 @@ const getMsg = (e: any) => e?.message || String(e);
 
 // ── WhatsApp Real-Time SSE Stream ──
 // Frontend connects to this endpoint to receive incoming WhatsApp messages live
-app.get('/api/whatsapp/stream/:userId', (req, res) => {
+app.get('/api/whatsapp/stream/:userId', requireAuth, (req, res) => {
   const userId = req.params.userId;
+  if (req.user!.uid !== userId) { res.status(403).json({ error: 'Forbidden' }); return; }
   if (!waManager) { res.status(503).json({ error: 'WhatsApp not available' }); return; }
 
   // Set SSE headers
@@ -495,13 +611,14 @@ app.get('/api/whatsapp/stream/:userId', (req, res) => {
 
 // ── Web Architect (Website Builder) Routes ──
 
-app.post('/api/website/generate', async (req, res) => {
+app.post('/api/website/generate', requireAuth, async (req, res) => {
   try {
     const { userId, title, prompt, timestamp } = req.body;
     if (!userId || !title || !prompt || !timestamp) {
       res.status(400).json({ error: 'userId, title, prompt, and timestamp are required' });
       return;
     }
+    if (req.user!.uid !== userId) { res.status(403).json({ error: 'Forbidden: userId does not match authenticated user' }); return; }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
@@ -593,14 +710,10 @@ app.get('/site-build/:userId/:timestamp', async (req, res) => {
 });
 
 // ── Sandbox Sub-Agent Runner ──
-// Runs complex tasks via OpenCode CLI or direct Gemini API call
-// Returns only a summary to keep the main agent's context clean
-
-import { execSync } from 'child_process';
 
 const OPENCODE_PATH = process.env.OPENCODE_PATH || '/opt/homebrew/bin/opencode';
 
-app.post('/api/sandbox/run', async (req, res) => {
+app.post('/api/sandbox/run', requireAuth, async (req, res) => {
   try {
     const { task_description, task_type, timeout } = req.body;
     if (!task_description) {
@@ -614,14 +727,20 @@ app.post('/api/sandbox/run', async (req, res) => {
 
     let resultText: string;
     let agentUsed: string;
+    let exitStatus: number | null = null;
+    let stderrText = '';
 
     if (safeType === 'opencode' || safeType === 'code') {
       // OpenCode CLI for coding tasks
-      const stdout = execSync(
+      const { spawnSync } = await import('child_process');
+      const proc = spawnSync(
         `${OPENCODE_PATH} run ${JSON.stringify(safeDesc)} --timeout ${safeTimeout}`,
         { encoding: 'utf-8', timeout: safeTimeout * 1000, maxBuffer: 10 * 1024 * 1024, stdio: ['pipe', 'pipe', 'pipe'] }
       );
-      resultText = stdout.trim();
+      exitStatus = proc.status;
+      stderrText = String(proc.stderr || '');
+      if (proc.error) throw proc.error;
+      resultText = String(proc.stdout || '').trim();
       agentUsed = 'opencode';
     } else {
       // Use the new @google/genai SDK (v1.x) for general tasks
@@ -656,12 +775,33 @@ app.post('/api/sandbox/run', async (req, res) => {
     const truncated = resultText.length > maxLength;
     const finalResult = truncated ? resultText.slice(0, maxLength) + '\n...[truncated]' : resultText;
 
+    // Fail closed: a nonzero exit means the sub-agent task did not complete.
+    if (safeType === 'opencode' || safeType === 'code') {
+      if (exitStatus !== 0) {
+        res.json({
+          ok: false,
+          exitCode: exitStatus,
+          error: stderrText.slice(0, 500) || `Sandbox sub-agent exited with code ${exitStatus}`,
+          result: finalResult,
+          truncated,
+          task_type: safeType,
+          agent: agentUsed,
+          simulated: false,
+          verified: false,
+        });
+        return;
+      }
+    }
+
     res.json({
       ok: true,
       result: finalResult,
       truncated,
       task_type: safeType,
       agent: agentUsed,
+      exitCode: exitStatus ?? undefined,
+      verified: safeType === 'opencode' || safeType === 'code',
+      simulated: false,
     });
   } catch (err: any) {
     console.error('Sandbox error:', err.message?.slice(0, 200));
@@ -676,7 +816,7 @@ app.post('/api/sandbox/run', async (req, res) => {
 const CEREBRAS_SCRIPT = path.join(__dirname, '..', 'scripts', 'cerebras_browser.py');
 const CEREBRAS_PYTHON = process.env.CEREBRAS_PYTHON || path.join(__dirname, '..', '.venv', 'bin', 'python3');
 
-app.post('/api/cerebras/browser', async (req, res) => {
+app.post('/api/cerebras/browser', requireAuth, async (req, res) => {
   try {
     const { task, model, timeout } = req.body;
     if (!task) {
@@ -715,13 +855,14 @@ app.post('/api/cerebras/browser', async (req, res) => {
 
 // ── Document Generation Route ──
 
-app.post('/api/docs/generate', async (req, res) => {
+app.post('/api/docs/generate', requireAuth, async (req, res) => {
   try {
     const { userId, title, prompt, templateKey, historyContext, language } = req.body;
     if (!userId || !title || !prompt || !templateKey) {
       res.status(400).json({ error: 'userId, title, prompt, and templateKey are required' });
       return;
     }
+    if (req.user!.uid !== userId) { res.status(403).json({ error: 'Forbidden: userId does not match authenticated user' }); return; }
 
     // 1. Identify the template (placeholder logic, assuming templates exist somewhere)
     // In a real implementation, you'd fetch the template file content here.

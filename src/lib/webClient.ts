@@ -1,4 +1,4 @@
-import { getBackendUrl } from './whatsappClient';
+import { getBackendUrl, getAuthHeaders } from './whatsappClient';
 
 export interface WebGlanceResult {
   query: string;
@@ -16,9 +16,10 @@ export async function webGlance(query: string, maxResults = 3): Promise<WebGlanc
   const trimmed = query.trim();
   if (!trimmed) throw new Error('Search query is required.');
 
+  const authHeaders = await getAuthHeaders();
   const res = await fetch(`${getBackendUrl()}/api/web/glance`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders },
     body: JSON.stringify({ query: trimmed, maxResults }),
   });
   const data = await res.json().catch(() => ({}));

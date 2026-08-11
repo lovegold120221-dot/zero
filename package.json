@@ -15,7 +15,9 @@
     "docker:whatsapp:build": "docker compose -f docker-compose.whatsapp.yml build",
     "docker:whatsapp:up": "docker compose -f docker-compose.whatsapp.yml up",
     "docker:whatsapp:down": "docker compose -f docker-compose.whatsapp.yml down",
-    "smoke:whatsapp": "node scripts/smoke-whatsapp-server.mjs"
+    "smoke:whatsapp": "node scripts/smoke-whatsapp-server.mjs",
+    "smoke:server": "node scripts/smoke-server.mjs",
+    "test": "node scripts/smoke-server.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
